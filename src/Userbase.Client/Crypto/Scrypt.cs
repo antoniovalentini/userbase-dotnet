@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using CryptSharp.Utility;
 
 namespace Userbase.Client.Crypto
 {
@@ -15,7 +14,7 @@ namespace Userbase.Client.Crypto
             
             var key = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes(password));
             var salt = Convert.FromBase64String(passwordSalt);
-            var hash = SCrypt.ComputeDerivedKey(key, salt, n, r, p, null, hashLength);
+            var hash = CryptSharp.Utility.SCrypt.ComputeDerivedKey(key, salt, n, r, p, null, hashLength);
 
             return Convert.ToBase64String(hash);
         }

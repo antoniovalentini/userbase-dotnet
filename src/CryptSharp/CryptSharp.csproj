@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.1.0.0</FileVersion>
+    <Version>2.1.0</Version>
+    <Company>Illusory Studios LLC</Company>
+    <Copyright>Copyright 2010-2014 James F. Bellinger</Copyright>
+    <Authors>James F. Bellinger</Authors>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <PackageProjectUrl>http://www.zer7.com/software/cryptsharp</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="License.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>
