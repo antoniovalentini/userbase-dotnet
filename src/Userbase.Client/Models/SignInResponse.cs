@@ -7,6 +7,7 @@
         public string Email { get; set; }
         public string Profile { get; set; }
         public string InternalProfile { get; set; }
+        public bool UsedTempPassword { get; set; }
     }
 
     public class SignInDto
