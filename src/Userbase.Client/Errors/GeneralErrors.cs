@@ -78,6 +78,13 @@ namespace Userbase.Client.Errors
         }
     }
     
+    public class UserNotSignedIn : Exception, IError 
+    {
+        public string Name => "UserNotSignedIn";
+        public HttpStatusCode Status => HttpStatusCode.BadRequest;
+        public UserNotSignedIn() : base("Not signed in.") {}
+    }
+
     public class UserNotFound : Exception, IError
     {
         public string Name => "UserNotFound";

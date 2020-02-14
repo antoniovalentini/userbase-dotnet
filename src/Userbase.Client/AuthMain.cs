@@ -96,6 +96,29 @@ namespace Userbase.Client
             
         }
 
+        public async Task SignOut()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(Ws.Session.Username)) throw new UserNotSignedIn();
+
+                // TODO
+                await Ws.SignOut();
+            }
+            catch (Exception ex)
+            {
+                if (!(ex is IError e)) throw new UnknownServiceUnavailable(ex);
+                switch (e.Name) {
+                    case "UserNotSignedIn":
+                    case "ServiceUnavailable":
+                        throw;
+
+                    default:
+                        throw new UnknownServiceUnavailable(ex);
+                }
+            }
+        }
+
         public static string RebuildPasswordToken(string password, GetPasswordSaltsResponse salts)
         {
             var passwordhash = Scrypt.Hash(password, salts.PasswordSalt);
