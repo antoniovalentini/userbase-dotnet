@@ -39,17 +39,16 @@ namespace Userbase.Client
                 var lowerCaseUsername = signInRequest.Username.ToLower();
                 var passwordSalts = await GetPasswordSaltsOverRestEndpoint(lowerCaseUsername);
                 // should it be awaited?
-                var passwordToken = RebuildPasswordToken(signInRequest.Password, passwordSalts);
+                var rebuildPasswordTokenResponse = RebuildPasswordToken(signInRequest.Password, passwordSalts);
 
-                var signInDto = await ActualSignIn(lowerCaseUsername, passwordToken);
+                var signInDto = await ActualSignIn(lowerCaseUsername, rebuildPasswordTokenResponse.PasswordToken);
                 var savedSeedString = _localData.GetSeedString(_config.AppId, lowerCaseUsername);
 
                 var seedStringFromBackup = string.Empty;
                 if (string.IsNullOrEmpty(savedSeedString))
                 {
-                    // TODO
-                    //seedStringFromBackup = await _getSeedStringFromPasswordBasedBackup(passwordHkdfKey, passwordBasedBackup);
-                    //_localData.SaveSeedString(rememberMe, appId, lowerCaseUsername, seedStringFromBackup)
+                    seedStringFromBackup = AesGcmUtils.GetSeedStringFromPasswordBasedBackup(rebuildPasswordTokenResponse.PasswordHkdfKey, signInDto.PasswordBasedBackup);
+                    _localData.SaveSeedString(signInRequest.RememberMe, _config.AppId, lowerCaseUsername, seedStringFromBackup);
                 }
 
                 var seedString = !string.IsNullOrEmpty(savedSeedString) ? savedSeedString : seedStringFromBackup;
@@ -119,7 +118,7 @@ namespace Userbase.Client
             }
         }
 
-        public static string RebuildPasswordToken(string password, GetPasswordSaltsResponse salts)
+        public static RebuildPasswordTokenResponse RebuildPasswordToken(string password, GetPasswordSaltsResponse salts)
         {
             var passwordhash = Scrypt.Hash(password, salts.PasswordSalt);
 
@@ -128,7 +127,11 @@ namespace Userbase.Client
             var salt = Convert.FromBase64String(salts.PasswordTokenSalt);
             var passwordToken = new Hkdf().DeriveKey(salt, ikm, info, 32);
 
-            return Convert.ToBase64String(passwordToken);
+            return new RebuildPasswordTokenResponse
+            {
+                PasswordHkdfKey = ikm,
+                PasswordToken = Convert.ToBase64String(passwordToken),
+            };
         }
 
         private async Task<SignInDto> ActualSignIn(string lowerCaseUsername, string passwordToken)

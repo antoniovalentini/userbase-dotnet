@@ -84,6 +84,11 @@ namespace Userbase.Client
                 return default;
             }
         }
+
+        public void SaveSeedString(string rememberMe, string appId, string lowerCaseUsername, string seedStringFromBackup)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public interface IStorage

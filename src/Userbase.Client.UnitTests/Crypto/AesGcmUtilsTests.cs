@@ -1,5 +1,5 @@
-﻿using System;
-using Userbase.Client.Crypto;
+﻿using Userbase.Client.Crypto;
+using Userbase.Client.Models;
 using Xunit;
 
 namespace Userbase.Client.UnitTests.Crypto
@@ -12,11 +12,14 @@ namespace Userbase.Client.UnitTests.Crypto
             // ARRANGE
             const string correctHash = "";
             byte[] passwordKeyHash = null;
-            var passwordBasedEncryptionKeySalt = Convert.FromBase64String("");
-            var aesGcm = new AesGcmUtils();
+            var passwordBasedBackup = new SignInPasswordBasedBackup
+            {
+                PasswordEncryptedSeed = "",
+                PasswordBasedEncryptionKeySalt = "",
+            };
 
             // ACT
-            var resultHash = aesGcm.GetSeedStringFromPasswordBasedBackup(passwordKeyHash, passwordBasedEncryptionKeySalt);
+            var resultHash = AesGcmUtils.GetSeedStringFromPasswordBasedBackup(passwordKeyHash, passwordBasedBackup);
 
             // ASSERT
             Assert.Equal(correctHash, resultHash);
