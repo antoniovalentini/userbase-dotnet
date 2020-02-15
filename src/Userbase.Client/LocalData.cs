@@ -28,6 +28,22 @@ namespace Userbase.Client
             });
         }
 
+        public void SaveSeedString(string rememberMe, string appId, string username, string seedString)
+        {
+            TryCatchWrapperAction(() =>
+            {
+                switch (rememberMe)
+                {
+                    case "local":
+                        _localStorage.SetItem(GetSeedName(appId, username), seedString);
+                        break;
+                    case "session":
+                        _sessionStorage.SetItem(GetSeedName(appId, username), seedString);
+                        break;
+                }
+            });
+        }
+
         public void SignInSession(string rememberMe, string username, string sessionId, string creationDate)
         {
             TryCatchWrapperAction(() => SetCurrentSession(rememberMe, username, true, sessionId, creationDate));
@@ -83,11 +99,6 @@ namespace Userbase.Client
                 System.Diagnostics.Trace.TraceWarning($"Error accessing browser storage. Defaulting to memory. Error: {e.Message}");
                 return default;
             }
-        }
-
-        public void SaveSeedString(string rememberMe, string appId, string lowerCaseUsername, string seedStringFromBackup)
-        {
-            throw new NotImplementedException();
         }
     }
 

@@ -62,7 +62,7 @@ namespace Userbase.Client
                     signInDto.Session.CreationDate);
 
                 // TODO
-                await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
+                // await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
 
                 // TODO usedTempPassword
                 return new SignInResponse
