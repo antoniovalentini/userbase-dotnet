@@ -21,12 +21,14 @@ namespace Userbase.Client
         private readonly Config _config;
         private readonly AuthApi _api;
         private readonly LocalData _localData;
+        private readonly Ws _ws;
 
         public AuthMain(Config config, AuthApi api, LocalData localData)
         {
             _config = config;
             _api = api;
             _localData = localData;
+            _ws = new Ws(_config);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
@@ -105,7 +107,7 @@ namespace Userbase.Client
             HttpResponseMessage response;
             try
             {
-                response = await Ws.Connect(session, seed, rememberMe);
+                response = await _ws.Connect(session, seed, rememberMe, username);
             } 
             catch (Exception ex)
             {
@@ -128,10 +130,10 @@ namespace Userbase.Client
         {
             try
             {
-                if (string.IsNullOrEmpty(Ws.Session.Username)) throw new UserNotSignedIn();
+                if (string.IsNullOrEmpty(_ws.Session.Username)) throw new UserNotSignedIn();
 
                 // TODO
-                await Ws.SignOut();
+                await _ws.SignOut();
             }
             catch (Exception ex)
             {
