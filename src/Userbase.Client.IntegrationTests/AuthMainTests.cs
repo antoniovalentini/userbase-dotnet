@@ -8,7 +8,7 @@ namespace Userbase.Client.IntegrationTests
     public class AuthMainTests
     {
         /// <summary>
-        /// In order to run this test you need to feel username, password and appId
+        /// In order to run this test you need to fill username, password and appId
         /// </summary>
         /// <returns></returns>
         [Fact]

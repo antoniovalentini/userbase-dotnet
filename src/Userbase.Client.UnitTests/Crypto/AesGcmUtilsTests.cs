@@ -6,6 +6,10 @@ namespace Userbase.Client.UnitTests.Crypto
 {
     public class AesGcmUtilsTests
     {
+        /// <summary>
+        /// In order to run this test you need to fill a correct hash and a valid SignInPasswordBasedBackup
+        /// </summary>
+        /// <returns></returns>
         [Fact]
         public void HashesShouldMatch()
         {
