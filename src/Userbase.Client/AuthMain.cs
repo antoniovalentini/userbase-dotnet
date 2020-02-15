@@ -45,19 +45,24 @@ namespace Userbase.Client
                 var savedSeedString = _localData.GetSeedString(_config.AppId, lowerCaseUsername);
 
                 var seedStringFromBackup = string.Empty;
+                // TODO: usedTempPassword
                 if (string.IsNullOrEmpty(savedSeedString))
                 {
                     seedStringFromBackup = AesGcmUtils.GetSeedStringFromPasswordBasedBackup(rebuildPasswordTokenResponse.PasswordHkdfKey, signInDto.PasswordBasedBackup);
                     _localData.SaveSeedString(signInRequest.RememberMe, _config.AppId, lowerCaseUsername, seedStringFromBackup);
                 }
 
-                var seedString = !string.IsNullOrEmpty(savedSeedString) ? savedSeedString : seedStringFromBackup;
+                var seedString = !string.IsNullOrEmpty(savedSeedString) 
+                    ? savedSeedString 
+                    : seedStringFromBackup;
+
                 _localData.SignInSession(signInRequest.RememberMe, lowerCaseUsername, signInDto.Session.SessionId,
                     signInDto.Session.CreationDate);
 
                 // TODO
-                //await _connectWebSocket(session, seedString, rememberMe)
+                await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
 
+                // TODO usedTempPassword
                 return new SignInResponse
                 {
                     Username = lowerCaseUsername,
@@ -93,6 +98,30 @@ namespace Userbase.Client
                 }
             }
             
+        }
+
+        private async Task ConnectWebSocket(SignInSession session, string seed, string rememberMe, string username)
+        {
+            HttpResponseMessage response;
+            try
+            {
+                response = await Ws.Connect(session, seed, rememberMe);
+            } 
+            catch (Exception ex)
+            {
+                if (ex.Message == "Web Socket already connected")
+                    throw new UserAlreadySignedIn(username);
+
+                throw;
+            }
+
+            if (response.IsSuccessStatusCode) return;
+
+            var exception = await ParseGenericErrors(response);
+            if (exception != null)
+                throw exception;
+
+            throw new Exception($"Unknown error during SignIn: {response.StatusCode}");
         }
 
         public async Task SignOut()

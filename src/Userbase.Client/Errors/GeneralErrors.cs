@@ -65,6 +65,17 @@ namespace Userbase.Client.Errors
         public UsernameOrPasswordMismatch() : base("Username or password mismatch.") {}
     }
 
+    public class UserAlreadySignedIn : Exception, IError 
+    {
+        public string Name => "UserAlreadySignedIn";
+        public HttpStatusCode Status => HttpStatusCode.BadRequest;
+        public string Username { get; }
+        public UserAlreadySignedIn(string username) : base("Already signed in.")
+        {
+            Username = username;
+        }
+    }
+
     public class AppIdNotValid : Exception, IError
     {
         public string Name => "AppIdNotValid";

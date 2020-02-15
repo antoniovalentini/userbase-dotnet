@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Net.Http;
+using System.Threading.Tasks;
+using Userbase.Client.Models;
 
 namespace Userbase.Client
 {
@@ -10,6 +12,12 @@ namespace Userbase.Client
         {
             // TODO
             await Task.FromResult(true);
+        }
+
+        public static async Task<HttpResponseMessage> Connect(SignInSession session, string seed, string rememberMe)
+        {
+            // TODO
+            throw new System.NotImplementedException();
         }
     }
 
