@@ -28,7 +28,7 @@ namespace Userbase.Client
             _config = config;
             _api = api;
             _localData = localData;
-            _ws = new Ws(_config);
+            _ws = new Ws(_config, api);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
@@ -245,7 +245,7 @@ namespace Userbase.Client
             throw new Exception($"Unknown error when fetching password salts: {response.StatusCode}");
         }
 
-        private static async Task<Exception> ParseGenericErrors(HttpResponseMessage response)
+        public static async Task<Exception> ParseGenericErrors(HttpResponseMessage response)
         {
             var data = await response.Content.ReadAsStringAsync();
             if (data == "App ID not valid")

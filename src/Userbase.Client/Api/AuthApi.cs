@@ -31,5 +31,10 @@ namespace Userbase.Client.Api
         {
             return await _client.GetAsync($"api/auth/get-password-salts?appId={_config.AppId}&username={username}");
         }
+
+        public async Task<HttpResponseMessage> GetServerPublicKey()
+        {
+            return await _client.GetAsync("api/auth/server-public-key");
+        }
     }
 }

@@ -2,7 +2,11 @@
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SuperSocket.ClientEngine;
+using Userbase.Client.Api;
+using Userbase.Client.Crypto;
 using Userbase.Client.Models;
 using WebSocket4Net;
 
@@ -24,22 +28,28 @@ namespace Userbase.Client
         public static WebSocket Instance4Net;
         
         private readonly Config _config;
+        private readonly AuthApi _api;
+        private readonly Keys _keys = new Keys();
+        private byte[] _encryptedValidationMessage;
+        private string _seedString;
+
         private const string WsAlreadyConnected = "Web Socket already connected";
 
-        public bool Connected { get; set; } = false;
+        public bool Connected { get; set; }
         public bool Reconnecting { get; set; }
         public Session Session { get; set; }
         public string ClientId { get; }
 
-        public Ws(Config config)
+        public Ws(Config config, AuthApi api)
         {
             _config = config;
+            _api = api;
             ClientId = Guid.NewGuid().ToString();
         }
 
-        public void Init()
+        public void Init(string seedString)
         {
-
+            _seedString = seedString;
         }
 
         public async Task SignOut()
@@ -54,7 +64,7 @@ namespace Userbase.Client
             await Task.FromException(new NotImplementedException());
         }
 
-        public async Task<HttpResponseMessage> Connect(SignInSession session, string seed, string rememberMe, string username, int reconnectDelay = 0)
+        public async Task<HttpResponseMessage> Connect(SignInSession session, string seedString, string rememberMe, string username, int reconnectDelay = 0)
         {
             // TODO
             if (Connected) throw new WebSocketError(WsAlreadyConnected, username);
@@ -62,16 +72,13 @@ namespace Userbase.Client
             var url = $"{WsUtils.GetWsUrl(_config.Endpoint)}api?appId={_config.AppId}&sessionId={session.SessionId}&clientId={ClientId}";
 
             // TODO: handle timeouts
-            Instance4Net = new WebSocket(url);
-            Instance4Net.Opened += OnOpened;
-            Instance4Net.DataReceived += OnDataReceived;
-            Instance4Net.MessageReceived += OnMessageReceived;
-            Instance4Net.Closed += async (sender, args) =>
-            {
-                await OnClosed(sender, args, session, seed, rememberMe, username, reconnectDelay);
-            };
-            Instance4Net.Error += OnError;
-            var result = await Instance4Net.OpenAsync();
+            var webSocket = new WebSocket(url);
+            webSocket.Opened += OnOpened;
+            webSocket.DataReceived += OnDataReceived;
+            webSocket.MessageReceived += async (sender, args) => await OnMessageReceived(sender, args, webSocket, seedString);
+            webSocket.Closed += async (sender, args) => await OnClosed(sender, args, session, seedString, rememberMe, username, reconnectDelay);
+            webSocket.Error += OnError;
+            var result = await webSocket.OpenAsync();
             
             return result
                 ? new HttpResponseMessage(HttpStatusCode.OK)
@@ -89,18 +96,53 @@ namespace Userbase.Client
             Console.WriteLine("Hello!");
         }
 
-        private void OnMessageReceived(object sender, MessageReceivedEventArgs e)
+        private async Task OnMessageReceived(object sender, MessageReceivedEventArgs e, WebSocket webSocket, string seedString)
         {
-            var msg = Newtonsoft.Json.Linq.JObject.Parse(e.Message);
-            if (msg["route"]?.ToString().ToLower() == "ping")
-            {
-                Instance4Net.Send(Newtonsoft.Json.JsonConvert.SerializeObject("Pong"));
-            }
+            Console.WriteLine(sender);
+            var msg = JObject.Parse(e.Message);
+            var route = msg["route"]?.ToString().ToLower() ?? "";
 
-            Console.WriteLine(e.Message);
+            switch (route)
+            {
+                case "connection":
+                    Init(seedString);
+                    Instance4Net = webSocket;
+                    //this.heartbeat()
+                    Connected = true;
+
+                    var connectionMessage = JsonConvert.DeserializeObject<ConnectionMessage>(e.Message);
+                    _keys.Salts = connectionMessage.KeySalts;
+                    _encryptedValidationMessage = connectionMessage.EncryptedValidationMessage.Data;
+
+                    await SetKeys(seedString);
+                    break;
+                case "ping":
+                    //this.heartbeat()
+                    Instance4Net.Send(Newtonsoft.Json.JsonConvert.SerializeObject("Pong"));
+                    break;
+                case "ApplyTransactions":
+                    break;
+                case "SignOut":
+                case "UpdateUser":
+                case "DeleteUser":
+                case "CreateDatabase":
+                case "GetDatabase":
+                case "OpenDatabase":
+                case "Insert":
+                case "Update":
+                case "Delete":
+                case "BatchTransaction":
+                case "Bundle":
+                case "ValidateKey":
+                case "GetPasswordSalts":
+                    break;
+                default:
+                    Console.WriteLine($"Received unknown message from backend: {msg}");
+                    break;
+            }
         }
 
-        private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seed, string rememberMe, string username, int reconnectDelay)
+        private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, string username, int reconnectDelay)
         {
             //if (timeout) return;
             Console.WriteLine(sender);
@@ -119,14 +161,14 @@ namespace Userbase.Client
                         : (reconnectDelay > 0 ? reconnectDelay + BackoffRetryDelay : 1000);
 
                     Reconnecting = true;
-                    await Reconnect(session, seed, rememberMe, delay);
+                    await Reconnect(session, seedString, rememberMe, delay);
                 } 
                 else if (e.Code == 3001 /*statusCodes['Client Already Connected']*/) {
                     throw new WebSocketError(WsAlreadyConnected, username);
                 } 
                 else
                 {
-                    Init();
+                    Init(seedString);
                 }
             }
         }
@@ -135,11 +177,83 @@ namespace Userbase.Client
         {
             Console.WriteLine(e.Exception);
         }
-    }
 
+        private async Task SetKeys(string seedString)
+        {
+            if (_keys.Init) return;
+
+            if (string.IsNullOrEmpty(seedString)) throw new WebSocketError("Missing seed", Session.Username);
+            if (_keys.Salts == null) throw new WebSocketError("Missing salts", Session.Username);
+            if (string.IsNullOrEmpty(_seedString)) _seedString = seedString;
+
+            var seed = Convert.FromBase64String(seedString);
+            _keys.EncryptionKey = AesGcmUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.EncryptionKeySalt));
+            _keys.DhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.DhKeySalt));
+            _keys.HmacKey = HmacUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.HmacKeySalt));
+
+            await ValidateKey();
+
+        }
+
+        private async Task ValidateKey()
+        {
+            var sharedKey = DiffieHellmanUtils.GetSharedKeyWithServer(_keys.DhPrivateKey, await GetServerPublicKey());
+
+        }
+
+        private static byte[] _serverPublicKey;
+        private async Task<byte[]> GetServerPublicKey()
+        {
+            if (_serverPublicKey != null)
+                return _serverPublicKey;
+
+            var response = await _api.GetServerPublicKey();
+            if (response.IsSuccessStatusCode)
+            {
+                _serverPublicKey = await response.Content.ReadAsByteArrayAsync();
+                return _serverPublicKey;
+            }
+
+            var one = await AuthMain.ParseGenericErrors(response);
+            if (one != null)
+                throw one;
+
+            throw new Exception($"Unknown error during SignIn: {response.StatusCode}");
+        }
+    }
+    
     // TODO: this is temporary only
     public class Session
     {
         public string Username { get; set; }
+    }
+
+    public class ConnectionMessage
+    {
+        public string Route;
+        public KeySalts KeySalts;
+        public EncryptedValidationMessage EncryptedValidationMessage;
+    }
+
+    public class KeySalts
+    {
+        public string EncryptionKeySalt;
+        public string DhKeySalt;
+        public string HmacKeySalt;
+    }
+
+    public class EncryptedValidationMessage
+    {
+        public string Type;
+        public byte[] Data;
+    }
+
+    public class Keys
+    {
+        public bool Init = false;
+        public KeySalts Salts;
+        public byte[] EncryptionKey;
+        public byte[] DhPrivateKey;
+        public byte[] HmacKey;
     }
 }

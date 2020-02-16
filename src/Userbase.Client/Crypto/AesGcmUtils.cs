@@ -33,5 +33,13 @@ namespace Userbase.Client.Crypto
 
             return seedStringFromBackup;
         }
+
+        private const string EncryptionKeyName = "encryption";
+
+        public static byte[] ImportKeyFromMaster(byte[] masterKey, byte[] encryptionKeySalt)
+        {
+            var info = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes(EncryptionKeyName));
+            return new Hkdf().DeriveKey(encryptionKeySalt, masterKey, info, 32);
+        }
     }
 }
