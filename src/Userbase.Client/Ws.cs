@@ -193,6 +193,10 @@ namespace Userbase.Client
 
             await ValidateKey();
 
+            _keys.Init = true;
+
+            //this.resolveConnection();
+            //this.connectionResolved = true;
         }
 
         private async Task ValidateKey()
