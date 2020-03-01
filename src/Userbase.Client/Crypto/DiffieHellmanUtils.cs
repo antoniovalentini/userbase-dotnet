@@ -38,7 +38,7 @@ namespace Userbase.Client.Crypto
             //var bobPublicBig = new BigInteger(serverPublicKey, true);
             //var secret = (bobPublicBig ^ a) % primeBig;
             var secret = BigInteger.ModPow(bobPublicBig, a, primeBig);
-            var binSecret = secret.ToByteArray(true);
+            var binSecret = secret.ToByteArray(true).Reverse().ToArray();
             if (binSecret.Length < primeBig.GetByteCount()) {
                 var front = new byte[primeBig.GetByteCount() - binSecret.Length];
                 var rv = new byte[front.Length + binSecret.Length];
