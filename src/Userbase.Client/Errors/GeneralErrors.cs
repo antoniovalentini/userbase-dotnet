@@ -127,4 +127,18 @@ namespace Userbase.Client.Errors
             System.Diagnostics.Trace.TraceError($"Userbase error. Please report this to support@userbase.com. Error: {ex.Message}");
         }
     }
+
+    public class TooManyRequests : Exception, IError {
+        public string Name => "TooManyRequests";
+        public HttpStatusCode Status => HttpStatusCode.TooManyRequests;
+        public TooManyRequests(float retryDelay) : this(CalculateDelay(retryDelay)) {}
+        private TooManyRequests(int retryDelaySeconds) : base($"Too many requests in a row. Please try again in ${retryDelaySeconds} second{(retryDelaySeconds != 1 ? "s" : "")}.")
+        {
+
+        }
+        private static int CalculateDelay(float retryDelay)
+        {
+            return (int)Math.Floor(retryDelay / 1000);
+        }
+    }
 }

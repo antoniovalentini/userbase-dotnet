@@ -21,14 +21,16 @@ namespace Userbase.Client
         private readonly Config _config;
         private readonly AuthApi _api;
         private readonly LocalData _localData;
+        private readonly ILogger _logger;
         private readonly Ws _ws;
 
-        public AuthMain(Config config, AuthApi api, LocalData localData)
+        public AuthMain(Config config, AuthApi api, LocalData localData, ILogger logger)
         {
             _config = config;
             _api = api;
             _localData = localData;
-            _ws = new Ws(_config, api);
+            _logger = logger;
+            _ws = new Ws(_config, api, _logger);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
