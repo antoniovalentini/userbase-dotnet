@@ -206,9 +206,9 @@ namespace Userbase.Client
                 _dh = new DiffieHellmanUtils(await GetServerPublicKey());
 
             var sharedKey = _dh.GetSharedKeyWithServer(_keys.DhPrivateKey);
+            var validationMessage = Convert.ToBase64String(AesGcmUtils.Decrypt(sharedKey, _encryptedValidationMessage));
 
             /*
-             const validationMessage = base64.encode(await crypto.aesGcm.decrypt(sharedKey, this.encryptedValidationMessage))
 
              const action = 'ValidateKey'
              const params = { validationMessage }

@@ -3,15 +3,17 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using Userbase.Client.Models;
+// ReSharper disable InconsistentNaming
 
 namespace Userbase.Client.Crypto
 {
     public class AesGcmUtils
     {
+        private const int RECOMMENDED_IV_BYTE_SIZE = 12;
+        private const int RECOMMENDED_AUTHENTICATION_TAG_LENGTH = 16;
+
         public static string GetSeedStringFromPasswordBasedBackup(byte[] passwordKeyHash, SignInPasswordBasedBackup passwordBasedBackup)
         {
-            const int RECOMMENDED_IV_BYTE_SIZE = 12;
-            const int RECOMMENDED_AUTHENTICATION_TAG_LENGTH = 16;
             var salt = Convert.FromBase64String(passwordBasedBackup.PasswordBasedEncryptionKeySalt);
             var info = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes("password-based-encryption"));
             var passwordBasedEncryptionKey = new Hkdf().DeriveKey(salt, passwordKeyHash, info, 32);
@@ -40,6 +42,22 @@ namespace Userbase.Client.Crypto
         {
             var info = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes(EncryptionKeyName));
             return new Hkdf().DeriveKey(encryptionKeySalt, masterKey, info, 32);
+        }
+
+        public static byte[] Decrypt(byte[] sharedKey, byte[] encryptedValidationMessage)
+        {
+            var iv = new byte[RECOMMENDED_IV_BYTE_SIZE];
+            var at = new byte[RECOMMENDED_AUTHENTICATION_TAG_LENGTH];
+            var ivStartIndex = encryptedValidationMessage.Length - RECOMMENDED_IV_BYTE_SIZE;
+            var atStartIndex = encryptedValidationMessage.Length - RECOMMENDED_IV_BYTE_SIZE - RECOMMENDED_AUTHENTICATION_TAG_LENGTH;
+            Array.Copy(encryptedValidationMessage, ivStartIndex, iv, 0, RECOMMENDED_IV_BYTE_SIZE);
+            Array.Copy(encryptedValidationMessage, atStartIndex, at, 0, RECOMMENDED_AUTHENTICATION_TAG_LENGTH);
+            var ciphertextArrayBuffer = encryptedValidationMessage.Take(atStartIndex).ToArray();
+            var plaintextBuffer = new byte[ciphertextArrayBuffer.Length];
+
+            using var aesGcm = new AesGcm(sharedKey);
+            aesGcm.Decrypt(iv, ciphertextArrayBuffer, at, plaintextBuffer);
+            return plaintextBuffer;
         }
     }
 }
