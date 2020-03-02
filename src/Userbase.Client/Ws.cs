@@ -39,6 +39,7 @@ namespace Userbase.Client
         public bool Reconnecting { get; set; }
         public Session Session { get; set; }
         public string ClientId { get; }
+        private DiffieHellmanUtils _dh;
 
         public Ws(Config config, AuthApi api)
         {
@@ -201,8 +202,19 @@ namespace Userbase.Client
 
         private async Task ValidateKey()
         {
-            var sharedKey = DiffieHellmanUtils.GetSharedKeyWithServer(_keys.DhPrivateKey, await GetServerPublicKey());
+            if (_dh == null)
+                _dh = new DiffieHellmanUtils(await GetServerPublicKey());
 
+            var sharedKey = _dh.GetSharedKeyWithServer(_keys.DhPrivateKey);
+
+            /*
+             const validationMessage = base64.encode(await crypto.aesGcm.decrypt(sharedKey, this.encryptedValidationMessage))
+
+             const action = 'ValidateKey'
+             const params = { validationMessage }
+
+             await this.request(action, params)
+             */
         }
 
         private static byte[] _serverPublicKey;
