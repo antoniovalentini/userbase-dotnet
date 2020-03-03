@@ -151,7 +151,8 @@ namespace Userbase.Client
                     case "ping":
                         //this.heartbeat()
                         _logger.Log("SENT - PONG");
-                        Instance4Net.Send(JsonConvert.SerializeObject("Pong"));
+                        const string action = "Pong";
+                        Instance4Net.Send(JsonConvert.SerializeObject(new {action}));
                         break;
                     case "applytransactions":
                         break;
