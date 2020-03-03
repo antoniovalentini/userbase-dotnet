@@ -25,7 +25,6 @@ namespace Userbase.Client.Ws
         private readonly Config _config;
         private readonly AuthApi _api;
         private readonly ILogger _logger;
-        private readonly Keys _keys = new Keys();
         private byte[] _encryptedValidationMessage;
         private string _seedString;
         private bool _connectionResolved;
@@ -34,10 +33,14 @@ namespace Userbase.Client.Ws
 
         private const string WsAlreadyConnected = "Web Socket already connected";
 
-        public bool Connected { get; set; }
+        private bool _connected;
         public bool Reconnecting { get; set; }
-        public Session Session { get; set; }
-        public string ClientId { get; }
+        public UserSession Session { get; } = new UserSession();
+        private string _rememberMe;
+        private object _state;
+        private int _pingTimeout;
+        private readonly Keys _keys = new Keys();
+        private readonly string _clientId;
         private DiffieHellmanUtils _dh;
         private readonly Dictionary<string, WsRequest> _pendingRequests;
 
@@ -46,15 +49,48 @@ namespace Userbase.Client.Ws
             _config = config;
             _api = api;
             _logger = logger;
-            ClientId = Guid.NewGuid().ToString();
+            _clientId = Guid.NewGuid().ToString();
             _pendingRequests = new Dictionary<string, WsRequest>();
         }
 
-        public void Init(Action resolveConnection, Action rejectConnection, string seedString)
+        public void Init(Action resolveConnection, Action rejectConnection, UserSession session, string seedString, string rememberMe, UserState state)
         {
+            if (_pingTimeout > 0) ClearTimeout(_pingTimeout);
+
+            // TODO: find out the scope of this code
+            //for (const property of Object.keys(this)) {
+            //    delete this[property];
+            //}
+
+            if (Instance4Net != null)
+            {
+                Instance4Net.Dispose();
+                Instance4Net = null;
+            }
+
+            _connected = false;
+
             _resolveConnection = resolveConnection;
             _rejectConnection = rejectConnection;
+            _connectionResolved = false;
+
+            Session.Username = session != null && !string.IsNullOrEmpty(session.Username) ? session.Username : "";
+            Session.SessionId = session != null && !string.IsNullOrEmpty(session.SessionId) ? session.SessionId : "";
+            Session.CreationDate = session != null && !string.IsNullOrEmpty(session.CreationDate) ? session.CreationDate : "";
+
             _seedString = seedString;
+            _keys.Clear();
+
+            _rememberMe = rememberMe;
+
+            _pendingRequests.Clear();
+
+            _state = state ?? new UserState();
+        }
+
+        private void ClearTimeout(int pingTimeout)
+        {
+            // TODO
         }
 
         public async Task SignOut()
@@ -72,9 +108,9 @@ namespace Userbase.Client.Ws
         public async Task<HttpResponseMessage> Connect(SignInSession session, string seedString, string rememberMe, string username, int reconnectDelay = 0)
         {
             // TODO
-            if (Connected) throw new WebSocketError(WsAlreadyConnected, username);
+            if (_connected) throw new WebSocketError(WsAlreadyConnected, username);
 
-            var url = $"{WsUtils.GetWsUrl(_config.Endpoint)}api?appId={_config.AppId}&sessionId={session.SessionId}&clientId={ClientId}";
+            var url = $"{WsUtils.GetWsUrl(_config.Endpoint)}api?appId={_config.AppId}&sessionId={session.SessionId}&clientId={_clientId}";
 
             // TODO: handle timeouts
             var webSocket = new WebSocket(url);
@@ -113,11 +149,11 @@ namespace Userbase.Client.Ws
                 switch (route)
                 {
                     case "connection":
-                        // TODO: pass equivalent of promise resolve and reject
-                        Init(null, null, seedString);
+                        // TODO: pass parameters
+                        Init(null, null, null, seedString, null, null);
                         Instance4Net = webSocket;
                         //this.heartbeat()
-                        Connected = true;
+                        _connected = true;
 
                         var connectionMessage = JsonConvert.DeserializeObject<ConnectionMessage>(e.Message);
                         _keys.Salts = connectionMessage.KeySalts;
@@ -218,7 +254,7 @@ namespace Userbase.Client.Ws
                 }
                 else
                 {
-                    Init(null, null, null);
+                    Init(null, null, null, null, null, null);
                 }
             }
         }
@@ -353,11 +389,5 @@ namespace Userbase.Client.Ws
 
             throw new Exception($"Unknown error during SignIn: {response.StatusCode}");
         }
-    }
-
-    // TODO: this is temporary only
-    public class Session
-    {
-        public string Username { get; set; }
     }
 }
