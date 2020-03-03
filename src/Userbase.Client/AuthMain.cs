@@ -9,6 +9,7 @@ using Userbase.Client.Api;
 using Userbase.Client.Crypto;
 using Userbase.Client.Errors;
 using Userbase.Client.Models;
+using Userbase.Client.Ws;
 
 namespace Userbase.Client
 {
@@ -22,7 +23,7 @@ namespace Userbase.Client
         private readonly AuthApi _api;
         private readonly LocalData _localData;
         private readonly ILogger _logger;
-        private readonly Ws _ws;
+        private readonly WsWrapper _ws;
 
         public AuthMain(Config config, AuthApi api, LocalData localData, ILogger logger)
         {
@@ -30,7 +31,7 @@ namespace Userbase.Client
             _api = api;
             _localData = localData;
             _logger = logger;
-            _ws = new Ws(_config, api, _logger);
+            _ws = new Ws.WsWrapper(_config, api, _logger);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
@@ -64,7 +65,7 @@ namespace Userbase.Client
                     signInDto.Session.CreationDate);
 
                 // TODO
-                // await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
+                await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
 
                 // TODO usedTempPassword
                 return new SignInResponse

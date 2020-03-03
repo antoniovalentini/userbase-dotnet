@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Userbase.Client.Api;
 using Userbase.Client.Models;
+using Userbase.Client.Ws;
 using WebSocket4Net;
 using Xunit;
 using Xunit.Abstractions;
@@ -52,11 +53,11 @@ namespace Userbase.Client.IntegrationTests
             // ACT
             var sw = Stopwatch.StartNew();
             var response = await auth.SignIn(request);
-            while (Ws.Instance4Net == null) {}
-            while (Ws.Instance4Net.State != WebSocketState.Closed)
+            while (WsWrapper.Instance4Net == null) {}
+            while (WsWrapper.Instance4Net.State != WebSocketState.Closed)
             {
                 if (sw.Elapsed.TotalSeconds > 120)
-                    Ws.Instance4Net.Close("Stop Test");
+                    WsWrapper.Instance4Net.Close("Stop Test");
             }
             sw.Stop();
 

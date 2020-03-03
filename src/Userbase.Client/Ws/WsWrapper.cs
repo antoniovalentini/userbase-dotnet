@@ -10,36 +10,13 @@ using Userbase.Client.Api;
 using Userbase.Client.Crypto;
 using Userbase.Client.Errors;
 using Userbase.Client.Models;
+using Userbase.Client.Ws.Models;
+using Userbase.Client.Ws.Errors;
 using WebSocket4Net;
 
-namespace Userbase.Client
+namespace Userbase.Client.Ws
 {
-    public class WebSocketError : Exception
-    {
-        public string Username { get; }
-        public WebSocketError(string message, string username) : base(message)
-        {
-            Username = username;
-        }
-    }
-
-    public class RequestFailed : Exception, IError
-    {
-        public string Name { get; }
-        public HttpStatusCode Status { get; }
-        public RequestFailed(string action, HttpStatusCode statusCode, string message) : base(message)
-        {
-            Name = $"RequestFailed: {action}";
-            Status = statusCode;
-            // TODO: figure out what's going on with this js code
-            /*
-             * this.status = e.status || (e.message === 'timeout' && statusCodes['Gateway Timeout'])
-             * this.response = e.status && e
-             */
-        }
-    }
-
-    public class Ws
+    public class WsWrapper
     {
         private const int BackoffRetryDelay = 1000;
 
@@ -64,7 +41,7 @@ namespace Userbase.Client
         private DiffieHellmanUtils _dh;
         private readonly Dictionary<string, WsRequest> _pendingRequests;
 
-        public Ws(Config config, AuthApi api, ILogger logger)
+        public WsWrapper(Config config, AuthApi api, ILogger logger)
         {
             _config = config;
             _api = api;
@@ -378,68 +355,9 @@ namespace Userbase.Client
         }
     }
 
-    public class PendingRequestError
-    {
-        public HttpStatusCode StatusCode { get; }
-        public string Message { get; }
-        public float RetryDelay { get; set; }
-
-        public PendingRequestError(HttpStatusCode statusCode, string message)
-        {
-            StatusCode = statusCode;
-            Message = message;
-        }
-    }
-
-    public class RequestParams
-    {
-        [JsonProperty("validationMessage")]
-        public string ValidationMessage { get; set; }
-    }
-
-    public class WsRequest
-    {
-        public Action<string> Resolve { get; set; }
-        public Action<string, string, HttpStatusCode, string> Reject { get; set; }
-    }
-
     // TODO: this is temporary only
     public class Session
     {
         public string Username { get; set; }
-    }
-
-    public class ConnectionMessage
-    {
-        public string Route;
-        public KeySalts KeySalts;
-        public EncryptedValidationMessage EncryptedValidationMessage;
-    }
-
-    public class KeySalts
-    {
-        public string EncryptionKeySalt;
-        public string DhKeySalt;
-        public string HmacKeySalt;
-    }
-
-    public class EncryptedValidationMessage
-    {
-        public string Type;
-        public byte[] Data;
-    }
-
-    public class Keys
-    {
-        public bool Init = false;
-        public KeySalts Salts;
-        public byte[] EncryptionKey;
-        public byte[] DhPrivateKey;
-        public byte[] HmacKey;
-    }
-
-    public interface ILogger
-    {
-        void Log(string message);
     }
 }
