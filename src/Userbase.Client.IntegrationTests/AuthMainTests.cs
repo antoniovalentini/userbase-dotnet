@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Userbase.Client.Api;
 using Userbase.Client.Models;
 using Userbase.Client.Ws;
@@ -29,9 +30,18 @@ namespace Userbase.Client.IntegrationTests
     {
         private readonly ITestOutputHelper _output;
 
+        private IConfiguration Configuration { get; }
+
         public AuthMainTests(ITestOutputHelper output)
         {
             _output = output;
+
+            // the type specified here is just so the secrets library can 
+            // find the UserSecretId we added in the csproj file
+            var builder = new ConfigurationBuilder()
+                .AddUserSecrets<AuthMainTests>();
+
+            Configuration = builder.Build();
         }
 
         /// <summary>
@@ -42,9 +52,9 @@ namespace Userbase.Client.IntegrationTests
         public async Task SimpleTest()
         {
             // ARRANGE
-            const string username = "";
-            const string password = "";
-            const string appId = "";
+            var username = Configuration["username"];
+            var password = Configuration["password"];
+            var appId = Configuration["appid"];
             var config = new Config(appId);
             var localData = new LocalData(new FakeLocalData(), new FakeLocalData());
             var auth = new AuthMain(config, new AuthApi(config), localData, new TestLogger(_output));
