@@ -34,10 +34,11 @@ namespace Userbase.Client.Ws
         private const string WsAlreadyConnected = "Web Socket already connected";
 
         private bool _connected;
-        public bool Reconnecting { get; set; }
-        public UserSession Session { get; } = new UserSession();
+        private bool _reconnecting;
+        private bool _reconnected;
+        public SignInSession Session { get; } = new SignInSession();
         private string _rememberMe;
-        private object _state;
+        private UserState _state;
         private int _pingTimeout;
         private readonly Keys _keys = new Keys();
         private readonly string _clientId;
@@ -53,7 +54,7 @@ namespace Userbase.Client.Ws
             _pendingRequests = new Dictionary<string, WsRequest>();
         }
 
-        public void Init(Action resolveConnection, Action rejectConnection, UserSession session, string seedString, string rememberMe, UserState state)
+        public void Init(Action resolveConnection, Action rejectConnection, SignInSession session, string seedString, string rememberMe, UserState state)
         {
             if (_pingTimeout > 0) ClearTimeout(_pingTimeout);
 
@@ -99,25 +100,37 @@ namespace Userbase.Client.Ws
             await Task.FromResult(true);
         }
 
-        // TODO: missing currentState input param
-        public async Task Reconnect(SignInSession session, string seed, string rememberMe, int reconnectDelay = 0)
+        // TODO: handle state
+        public async Task Reconnect(SignInSession session, string seed, string rememberMe, UserState state, int reconnectDelay = 0)
         {
             await Task.FromException(new NotImplementedException());
         }
 
-        public async Task<HttpResponseMessage> Connect(SignInSession session, string seedString, string rememberMe, string username, int reconnectDelay = 0)
+        public async Task<HttpResponseMessage> Connect(SignInSession session, string seedString, string rememberMe, int reconnectDelay = 0)
         {
-            // TODO
-            if (_connected) throw new WebSocketError(WsAlreadyConnected, username);
+            if (_connected) throw new WebSocketError(WsAlreadyConnected, session.Username);
+            
+            var timeout = false;
+            var timeoutToOpenWebSocket = SetTimeout(
+                () =>
+                {
+                    if (!_connected && !_reconnecting)
+                    {
+                        timeout = true;
+                        throw new WebSocketError("timeout", "");
+                    }
+                },
+                10000
+            );
 
             var url = $"{WsUtils.GetWsUrl(_config.Endpoint)}api?appId={_config.AppId}&sessionId={session.SessionId}&clientId={_clientId}";
 
             // TODO: handle timeouts
             var webSocket = new WebSocket(url);
-            webSocket.Opened += OnOpened;
+            webSocket.Opened += (sender, e) => OnOpened(sender, e, timeout, timeoutToOpenWebSocket);
             webSocket.DataReceived += OnDataReceived;
-            webSocket.MessageReceived += async (sender, args) => await OnMessageReceived(sender, args, webSocket, seedString);
-            webSocket.Closed += async (sender, args) => await OnClosed(sender, args, session, seedString, rememberMe, username, reconnectDelay);
+            webSocket.MessageReceived += async (sender, args) => await OnMessageReceived(sender, args, webSocket, seedString, session);
+            webSocket.Closed += async (sender, args) => await OnClosed(sender, args, session, seedString, rememberMe, reconnectDelay, timeout);
             webSocket.Error += OnError;
             var result = await webSocket.OpenAsync();
 
@@ -126,10 +139,16 @@ namespace Userbase.Client.Ws
                 : new HttpResponseMessage(HttpStatusCode.InternalServerError);
         }
 
-        private void OnOpened(object sender, EventArgs e)
+        private int SetTimeout(Action action, int i)
         {
-            //if (timeout) return;
-            //clearTimeout(timeoutToOpenWebSocket);
+            // TODO
+            throw new NotImplementedException();
+        }
+
+        private void OnOpened(object sender, EventArgs e, bool timeout, int timeoutToOpenWebSocket)
+        {
+            if (timeout) return;
+            ClearTimeout(timeoutToOpenWebSocket);
         }
 
         private void OnDataReceived(object sender, DataReceivedEventArgs e)
@@ -137,7 +156,7 @@ namespace Userbase.Client.Ws
             Console.WriteLine("Hello!");
         }
 
-        private async Task OnMessageReceived(object sender, MessageReceivedEventArgs e, WebSocket webSocket, string seedString)
+        private async Task OnMessageReceived(object sender, MessageReceivedEventArgs e, WebSocket webSocket, string seedString, SignInSession session)
         {
             //_logger.Log(sender.ToString());
             _logger.Log($"RECEIVED - {e.Message}");
@@ -150,7 +169,7 @@ namespace Userbase.Client.Ws
                 {
                     case "connection":
                         // TODO: pass parameters
-                        Init(null, null, null, seedString, null, null);
+                        Init(null, null, session, seedString, null, null);
                         Instance4Net = webSocket;
                         //this.heartbeat()
                         _connected = true;
@@ -226,15 +245,14 @@ namespace Userbase.Client.Ws
 
         }
 
-        private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, string username, int reconnectDelay)
+        private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, int reconnectDelay, bool timeout)
         {
-            //if (timeout) return;
-            Console.WriteLine(sender);
+            if (timeout) return;
             if (args is ClosedEventArgs e)
             {
+                // TODO
                 var serviceRestart = e.Code == 1012; // statusCodes['Service Restart']
                 var clientDisconnected = e.Code == 3000; //statusCodes['No Pong Received']
-                // TODO: investigate on e.wasClean
                 var attemptToReconnect =
                     serviceRestart ||
                     clientDisconnected; // || !e.wasClean // closed without explicit call to ws.close()
@@ -245,12 +263,13 @@ namespace Userbase.Client.Ws
                         ? 0
                         : (reconnectDelay > 0 ? reconnectDelay + BackoffRetryDelay : 1000);
 
-                    Reconnecting = true;
-                    await Reconnect(session, seedString, rememberMe, delay);
+                    _reconnecting = true;
+                    await Reconnect(session, seedString, rememberMe, !_reconnected && _state != null ? _state : null, delay);
                 }
                 else if (e.Code == 3001 /*statusCodes['Client Already Connected']*/)
                 {
-                    throw new WebSocketError(WsAlreadyConnected, username);
+                    // TODO: reject websocketError?
+                    throw new WebSocketError(WsAlreadyConnected, session.Username);
                 }
                 else
                 {

@@ -2,7 +2,15 @@
 {
     public class SignInSession
     {
-        public string CreationDate { get; set; }
-        public string SessionId { get; set; }
+        public string Username;
+        public string SessionId;
+        public string CreationDate;
+
+        public void Clear()
+        {
+            Username = string.Empty;
+            SessionId = string.Empty;
+            CreationDate = string.Empty;
+        }
     }
 }

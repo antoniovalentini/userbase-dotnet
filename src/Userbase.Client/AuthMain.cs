@@ -65,7 +65,7 @@ namespace Userbase.Client
                     signInDto.Session.CreationDate);
 
                 // TODO
-                await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe, lowerCaseUsername);
+                await ConnectWebSocket(signInDto.Session, seedString, signInRequest.RememberMe);
 
                 // TODO usedTempPassword
                 return new SignInResponse
@@ -105,17 +105,17 @@ namespace Userbase.Client
             
         }
 
-        private async Task ConnectWebSocket(SignInSession session, string seed, string rememberMe, string username)
+        private async Task ConnectWebSocket(SignInSession session, string seed, string rememberMe)
         {
             HttpResponseMessage response;
             try
             {
-                response = await _ws.Connect(session, seed, rememberMe, username);
+                response = await _ws.Connect(session, seed, rememberMe);
             } 
             catch (Exception ex)
             {
                 if (ex.Message == "Web Socket already connected")
-                    throw new UserAlreadySignedIn(username);
+                    throw new UserAlreadySignedIn(session.Username);
 
                 throw;
             }
@@ -183,7 +183,11 @@ namespace Userbase.Client
             }
 
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<SignInDto>(await response.Content.ReadAsStringAsync());
+            {
+                var signinDto = JsonConvert.DeserializeObject<SignInDto>(await response.Content.ReadAsStringAsync());
+                signinDto.Session.Username = lowerCaseUsername;
+                return signinDto;
+            }
 
             var one = await ParseGenericErrors(response);
             if (one != null)
