@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -32,6 +33,52 @@ namespace Userbase.Client
             _localData = localData;
             _logger = logger;
             _ws = new Ws.WsWrapper(_config, api, _logger);
+        }
+
+        public async Task SignUp(SignUpRequest signUpRequest)
+        {
+            ValidateSignUpOrSignInInput(signUpRequest.Username, signUpRequest.Password);
+            if (signUpRequest.Profile != null) ValidateProfile(signUpRequest.Profile);
+            if (string.IsNullOrEmpty(signUpRequest.Email)) throw new Errors.EmailNotValid();
+            if (!Config.RememberMeOptions.ContainsKey(signUpRequest.RememberMe))
+                throw new RememberMeValueNotValid();
+
+            var username = signUpRequest.Username.ToLower();
+            var email = signUpRequest.Email.ToLower();
+            var appId = _config.AppId;
+            var seed = Utils.GenerateSeed();
+
+            var (sessionId, creationDate, userId) =
+                await GenerateKeysAndSignUp(username, signUpRequest.Password, seed, email, signUpRequest.Profile);
+
+        }
+
+        public async Task<(string sessionId, DateTime creationDate, string userId)> GenerateKeysAndSignUp(
+            string username, string password, byte[] seed, string email, Dictionary<string, string> profile)
+        {
+            string sessionId = "", userId = "";
+            DateTime creationDate = DateTime.MinValue;
+
+            var (passwordToken,passwordSalts,passwordBasedBackup) = await GeneratePasswordToken(password, seed);
+
+            return (sessionId, creationDate, userId);
+        }
+
+        private Task<(string passwordToken, object passwordSalts, object passwordBasedBackup)> GeneratePasswordToken(string password, byte[] seed)
+        {
+            var passwordSalt = Scrypt.GenerateSalt();
+            var passwordHash = Scrypt.Hash(password, passwordSalt);
+
+            //var passwordHkdfKey = crypto.hkdf.importHkdfKeyFromString(passwordHash)
+            var passwordTokenSalt = Hkdf.GenerateSalt();
+            var passwordToken = Hkdf.GetPasswordToken( /*passwordHkdfKey*/passwordHash, passwordTokenSalt);
+
+            var passwordBasedEncryptionKeySalt = Hkdf.GenerateSalt();
+            var passwordBasedEncryptionKey = AesGcmUtils.GetPasswordBasedEncryptionKey(passwordHash, passwordBasedEncryptionKeySalt);
+
+            var passwordEncryptedSeed = AesGcmUtils.Encrypt(passwordBasedEncryptionKey, seed);
+
+            return (passwordToken, passwordSalts, passwordBasedBackup);
         }
 
         public async Task<SignInResponse> SignIn(SignInRequest signInRequest)
@@ -201,6 +248,13 @@ namespace Userbase.Client
                 throw new UsernameOrPasswordMismatch();
 
             throw new Exception($"Unknown error during SignIn: {response.StatusCode}");
+        }
+
+        private static void ValidateProfile(Dictionary<string, string> profile)
+        {
+            if (profile.Keys.Count == 0) throw new ProfileCannotBeEmpty();
+            foreach (var (key, value) in profile)
+                if (string.IsNullOrEmpty(value)) throw new ProfileValueCannotBeBlank(key);
         }
 
         private static void ValidateSignUpOrSignInInput(string username, string password)

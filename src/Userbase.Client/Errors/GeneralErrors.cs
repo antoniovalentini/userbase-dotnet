@@ -10,6 +10,30 @@ namespace Userbase.Client.Errors
         HttpStatusCode Status { get; }
     }
 
+    public class ProfileValueCannotBeBlank : Exception, IError
+    {
+        private readonly string _key;
+        public string Name => "ProfileValueCannotBeBlank";
+        public HttpStatusCode Status => HttpStatusCode.BadRequest;
+        public ProfileValueCannotBeBlank(string key) : base("Profile value cannot be blank.")
+        {
+            _key = key;
+        }
+    }
+    public class ProfileCannotBeEmpty : Exception, IError
+    {
+        public string Name => "ProfileCannotBeEmpty";
+        public HttpStatusCode Status => HttpStatusCode.BadRequest;
+        public ProfileCannotBeEmpty() : base("Profile cannot be empty.") {}
+    }
+
+    public class EmailNotValid : Exception, IError
+    {
+        public string Name => "EmailNotValid";
+        public HttpStatusCode Status => HttpStatusCode.BadRequest;
+        public EmailNotValid() : base("Email not valid.") {}
+    }
+
     public class UsernameCannotBeBlank : Exception, IError
     {
         public string Name => "UsernameCannotBeBlank";

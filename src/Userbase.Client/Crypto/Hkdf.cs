@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace Userbase.Client.Crypto
 {
@@ -49,6 +50,35 @@ namespace Userbase.Client.Crypto
             var prk = Extract(salt, inputKeyMaterial);
             var result = Expand(prk, info, outputLength);
             return result;
+        }
+
+        /**
+        *  RFC 5869:
+        *
+        *  "the use of salt adds significantly to the strength of HKDF...
+        *  Ideally, the salt value is a random (or pseudorandom) string of the
+        *  length HashLen"
+        *
+        *  https://tools.ietf.org/html/rfc5869#section-3.1
+        *
+        **/
+        private const int SALT_BYTE_SIZE = Sha256Custom.BYTE_SIZE;
+        public static byte[] GenerateSalt()
+        {
+            var result = new byte[SALT_BYTE_SIZE];
+            using var rngCsp = new RNGCryptoServiceProvider();
+            rngCsp.GetBytes(result);
+            return result;
+        }
+
+        public static object GetPasswordToken(string passwordhash, byte[] salt)
+        {
+            var ikm = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes(passwordhash));
+            var info = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes("password-token"));
+            //var salt = Convert.FromBase64String(salts.PasswordTokenSalt);
+            var passwordToken = new Hkdf().DeriveKey(salt, ikm, info, 32);
+
+            return Convert.ToBase64String(passwordToken);
         }
     }
 }
