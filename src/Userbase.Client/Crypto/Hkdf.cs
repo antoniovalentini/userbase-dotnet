@@ -71,7 +71,7 @@ namespace Userbase.Client.Crypto
             return result;
         }
 
-        public static object GetPasswordToken(string passwordhash, byte[] salt)
+        public static string GetPasswordToken(string passwordhash, byte[] salt)
         {
             var ikm = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes(passwordhash));
             var info = Utils.FillOddsWithZeros(Encoding.ASCII.GetBytes("password-token"));

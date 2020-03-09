@@ -73,5 +73,10 @@ namespace Userbase.Client.Crypto
             }
             return bytes;
         }
+
+        public static byte[] GetPublicKey(byte[] dhPrivateKey)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

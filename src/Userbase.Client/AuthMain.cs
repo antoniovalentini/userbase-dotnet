@@ -57,14 +57,22 @@ namespace Userbase.Client
             string username, string password, byte[] seed, string email, Dictionary<string, string> profile)
         {
             string sessionId = "", userId = "";
-            DateTime creationDate = DateTime.MinValue;
+            var creationDate = DateTime.MinValue;
 
-            var (passwordToken,passwordSalts,passwordBasedBackup) = await GeneratePasswordToken(password, seed);
+            var (passwordToken,passwordSalts,passwordBasedBackup) = GeneratePasswordToken(password, seed);
+
+            var encryptionKeySalt = Hkdf.GenerateSalt();
+            var dhKeySalt = Hkdf.GenerateSalt();
+            var hmacKeySalt = Hkdf.GenerateSalt();
+
+            var dhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, dhKeySalt);
+            byte[] publicKey = DiffieHellmanUtils.GetPublicKey(dhPrivateKey);
+
 
             return (sessionId, creationDate, userId);
         }
 
-        private Task<(string passwordToken, object passwordSalts, object passwordBasedBackup)> GeneratePasswordToken(string password, byte[] seed)
+        private (string passwordToken, dynamic passwordSalts, dynamic passwordBasedBackup) GeneratePasswordToken(string password, byte[] seed)
         {
             var passwordSalt = Scrypt.GenerateSalt();
             var passwordHash = Scrypt.Hash(password, passwordSalt);
@@ -77,6 +85,18 @@ namespace Userbase.Client
             var passwordBasedEncryptionKey = AesGcmUtils.GetPasswordBasedEncryptionKey(passwordHash, passwordBasedEncryptionKeySalt);
 
             var passwordEncryptedSeed = AesGcmUtils.Encrypt(passwordBasedEncryptionKey, seed);
+
+            var passwordSalts = new 
+            {
+                passwordSalt = Convert.ToBase64String(passwordSalt),
+                passwordTokenSalt = Convert.ToBase64String(passwordTokenSalt),
+            };
+
+            var passwordBasedBackup = new 
+            {
+                passwordBasedEncryptionKeySalt = Convert.ToBase64String(passwordBasedEncryptionKeySalt),
+                passwordEncryptedSeed = Convert.ToBase64String(passwordEncryptedSeed),
+            };
 
             return (passwordToken, passwordSalts, passwordBasedBackup);
         }
