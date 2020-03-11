@@ -142,7 +142,7 @@ namespace Userbase.Client.Ws
         private int SetTimeout(Action action, int i)
         {
             // TODO
-            throw new NotImplementedException();
+            return 0;
         }
 
         private void OnOpened(object sender, EventArgs e, bool timeout, int timeoutToOpenWebSocket)

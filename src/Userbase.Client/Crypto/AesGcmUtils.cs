@@ -70,17 +70,18 @@ namespace Userbase.Client.Crypto
 
         public static byte[] Encrypt(byte[] encryptionKey, byte[] seed)
         {
-            var iv = new byte[RECOMMENDED_IV_BYTE_SIZE];
+            var iv = Utils.GenerateRandom(RECOMMENDED_IV_BYTE_SIZE);
             var at = new byte[RECOMMENDED_AUTHENTICATION_TAG_LENGTH];
-            var ivStartIndex = seed.Length - RECOMMENDED_IV_BYTE_SIZE;
-            var atStartIndex = seed.Length - RECOMMENDED_IV_BYTE_SIZE - RECOMMENDED_AUTHENTICATION_TAG_LENGTH;
-            Array.Copy(seed, ivStartIndex, iv, 0, RECOMMENDED_IV_BYTE_SIZE);
-            Array.Copy(seed, atStartIndex, at, 0, RECOMMENDED_AUTHENTICATION_TAG_LENGTH);
-
+            var ciphertext = new byte[seed.Length];
             using var aesGcm = new AesGcm(encryptionKey);
-            aesGcm.Encrypt(iv, plaintext, ciphertext, at);
+            aesGcm.Encrypt(iv, seed, ciphertext, at);
 
-            return ciphertext;
+            var result = new byte[ciphertext.Length + at.Length + iv.Length];
+            Array.Copy(ciphertext, result, ciphertext.Length);
+            Array.Copy(at, 0, result, ciphertext.Length, RECOMMENDED_AUTHENTICATION_TAG_LENGTH);
+            Array.Copy(iv, 0, result, ciphertext.Length + RECOMMENDED_AUTHENTICATION_TAG_LENGTH, RECOMMENDED_IV_BYTE_SIZE);
+
+            return result;
         }
     }
 }

@@ -76,7 +76,15 @@ namespace Userbase.Client.Crypto
 
         public static byte[] GetPublicKey(byte[] dhPrivateKey)
         {
-            throw new NotImplementedException();
+            //g^a mod p
+            var g = new BigInteger(2);
+            var a = BigInteger.Parse("0" + ByteArrayToString(dhPrivateKey), NumberStyles.HexNumber);
+            var primeBig = BigInteger.Parse("0" + PrimeString, NumberStyles.HexNumber);
+
+            var pubKey = BigInteger.ModPow(g, a, primeBig);
+            var binaryPubKey = pubKey.ToByteArray(true).Reverse().ToArray();
+
+            return binaryPubKey;
         }
     }
 }

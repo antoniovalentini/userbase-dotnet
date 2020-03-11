@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Userbase.Client.Models;
 
 namespace Userbase.Client.Api
 {
@@ -35,6 +37,13 @@ namespace Userbase.Client.Api
         public async Task<HttpResponseMessage> GetServerPublicKey()
         {
             return await _client.GetAsync("api/auth/server-public-key");
+        }
+
+        public async Task<HttpResponseMessage> SignUp(SignUpApiRequest request)
+        {
+            var data = JsonConvert.SerializeObject(request);
+            var content = new StringContent(data, Encoding.UTF8, "application/json");
+            return await _client.PostAsync($"api/auth/sign-up?appId={_config.AppId}", content);
         }
     }
 }

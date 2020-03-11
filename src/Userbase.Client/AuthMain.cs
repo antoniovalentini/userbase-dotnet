@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -35,7 +36,7 @@ namespace Userbase.Client
             _ws = new Ws.WsWrapper(_config, api, _logger);
         }
 
-        public async Task SignUp(SignUpRequest signUpRequest)
+        public async Task<SignUpResult> SignUp(SignUpRequest signUpRequest)
         {
             ValidateSignUpOrSignInInput(signUpRequest.Username, signUpRequest.Password);
             if (signUpRequest.Profile != null) ValidateProfile(signUpRequest.Profile);
@@ -51,14 +52,26 @@ namespace Userbase.Client
             var (sessionId, creationDate, userId) =
                 await GenerateKeysAndSignUp(username, signUpRequest.Password, seed, email, signUpRequest.Profile);
 
+            var session = new SignInSession {Username = username, SessionId = sessionId, CreationDate = creationDate.ToString(CultureInfo.InvariantCulture)};
+            var seedString = Convert.ToBase64String(seed);
+
+            _localData.SaveSeedString(signUpRequest.RememberMe, appId, username, seedString);
+            _localData.SignInSession(signUpRequest.RememberMe, username, sessionId, creationDate.ToString(CultureInfo.InvariantCulture));
+
+            await ConnectWebSocket(session, seedString, signUpRequest.RememberMe);
+
+            return new SignUpResult
+            {
+                Username = username,
+                UserId = userId,
+                Email = email,
+                Profile = signUpRequest.Profile,
+            };
         }
 
         public async Task<(string sessionId, DateTime creationDate, string userId)> GenerateKeysAndSignUp(
             string username, string password, byte[] seed, string email, Dictionary<string, string> profile)
         {
-            string sessionId = "", userId = "";
-            var creationDate = DateTime.MinValue;
-
             var (passwordToken,passwordSalts,passwordBasedBackup) = GeneratePasswordToken(password, seed);
 
             var encryptionKeySalt = Hkdf.GenerateSalt();
@@ -66,10 +79,43 @@ namespace Userbase.Client
             var hmacKeySalt = Hkdf.GenerateSalt();
 
             var dhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, dhKeySalt);
-            byte[] publicKey = DiffieHellmanUtils.GetPublicKey(dhPrivateKey);
+            var publicKey = DiffieHellmanUtils.GetPublicKey(dhPrivateKey);
 
+            var keySalts = new
+            {
+                encryptionKeySalt = Convert.ToBase64String(encryptionKeySalt),
+                dhKeySalt = Convert.ToBase64String(dhKeySalt),
+                hmacKeySalt = Convert.ToBase64String(hmacKeySalt),
+            };
+            
+            var request = new SignUpApiRequest
+            {
+                Username = username,
+                PasswordToken = passwordToken,
+                PublicKey = publicKey,
+                PasswordSalts = passwordSalts,
+                KeySalts  = keySalts,
+                Email = email,
+                Profile = profile,
+                PasswordBasedBackup = passwordBasedBackup
+            };
+            var response = await _api.SignUp(request);
 
-            return (sessionId, creationDate, userId);
+            if (response.IsSuccessStatusCode)
+            {
+                var apiResponse = JsonConvert.DeserializeObject<SignUpApiResponse>(await response.Content.ReadAsStringAsync());
+                return (apiResponse.SessionId, apiResponse.CreationDate, apiResponse.UserId);
+            }
+
+            var one = await ParseGenericErrors(response);
+            if (one != null)
+                throw one;
+
+            var two = await ParseGenericUsernamePasswordError(response);
+            if (two != null)
+                throw two;
+
+            throw new Exception($"Unknown error during SignUp: {response.StatusCode}");
         }
 
         private (string passwordToken, dynamic passwordSalts, dynamic passwordBasedBackup) GeneratePasswordToken(string password, byte[] seed)
