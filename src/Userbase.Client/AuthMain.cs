@@ -38,35 +38,80 @@ namespace Userbase.Client
 
         public async Task<SignUpResult> SignUp(SignUpRequest signUpRequest)
         {
-            ValidateSignUpOrSignInInput(signUpRequest.Username, signUpRequest.Password);
-            if (signUpRequest.Profile != null) ValidateProfile(signUpRequest.Profile);
-            if (string.IsNullOrEmpty(signUpRequest.Email)) throw new Errors.EmailNotValid();
-            if (!Config.RememberMeOptions.ContainsKey(signUpRequest.RememberMe))
-                throw new RememberMeValueNotValid();
-
-            var username = signUpRequest.Username.ToLower();
-            var email = signUpRequest.Email.ToLower();
-            var appId = _config.AppId;
-            var seed = Utils.GenerateSeed();
-
-            var (sessionId, creationDate, userId) =
-                await GenerateKeysAndSignUp(username, signUpRequest.Password, seed, email, signUpRequest.Profile);
-
-            var session = new SignInSession {Username = username, SessionId = sessionId, CreationDate = creationDate.ToString(CultureInfo.InvariantCulture)};
-            var seedString = Convert.ToBase64String(seed);
-
-            _localData.SaveSeedString(signUpRequest.RememberMe, appId, username, seedString);
-            _localData.SignInSession(signUpRequest.RememberMe, username, sessionId, creationDate.ToString(CultureInfo.InvariantCulture));
-
-            await ConnectWebSocket(session, seedString, signUpRequest.RememberMe);
-
-            return new SignUpResult
+            try
             {
-                Username = username,
-                UserId = userId,
-                Email = email,
-                Profile = signUpRequest.Profile,
-            };
+                ValidateSignUpOrSignInInput(signUpRequest.Username, signUpRequest.Password);
+                if (signUpRequest.Profile != null) ValidateProfile(signUpRequest.Profile);
+                if (string.IsNullOrEmpty(signUpRequest.Email)) throw new Errors.EmailNotValid();
+                if (!Config.RememberMeOptions.ContainsKey(signUpRequest.RememberMe))
+                    throw new RememberMeValueNotValid();
+
+                var username = signUpRequest.Username.ToLower();
+                var email = signUpRequest.Email.ToLower();
+                var appId = _config.AppId;
+                var seed = Utils.GenerateSeed();
+
+                var (sessionId, creationDate, userId) =
+                    await GenerateKeysAndSignUp(username, signUpRequest.Password, seed, email, signUpRequest.Profile);
+
+                var session = new SignInSession
+                {
+                    Username = username, SessionId = sessionId,
+                    CreationDate = creationDate.ToString(CultureInfo.InvariantCulture)
+                };
+                var seedString = Convert.ToBase64String(seed);
+
+                _localData.SaveSeedString(signUpRequest.RememberMe, appId, username, seedString);
+                _localData.SignInSession(signUpRequest.RememberMe, username, sessionId,
+                    creationDate.ToString(CultureInfo.InvariantCulture));
+
+                await ConnectWebSocket(session, seedString, signUpRequest.RememberMe);
+
+                return new SignUpResult
+                {
+                    Username = username,
+                    UserId = userId,
+                    Email = email,
+                    Profile = signUpRequest.Profile,
+                };
+            }
+            catch (Exception ex)
+            {
+                if (!(ex is IError e)) throw new UnknownServiceUnavailable(ex);
+                switch (e.Name)
+                {
+                    case "ParamsMustBeObject":
+                    case "UsernameMissing":
+                    case "UsernameAlreadyExists":
+                    case "UsernameCannotBeBlank":
+                    case "UsernameMustBeString":
+                    case "UsernameTooLong":
+                    case "PasswordMissing":
+                    case "PasswordCannotBeBlank":
+                    case "PasswordTooShort":
+                    case "PasswordTooLong":
+                    case "PasswordMustBeString":
+                    case "EmailNotValid":
+                    case "ProfileMustBeObject":
+                    case "ProfileCannotBeEmpty":
+                    case "ProfileHasTooManyKeys":
+                    case "ProfileKeyMustBeString":
+                    case "ProfileKeyTooLong":
+                    case "ProfileValueMustBeString":
+                    case "ProfileValueCannotBeBlank":
+                    case "ProfileValueTooLong":
+                    case "RememberMeValueNotValid":
+                    case "TrialExceededLimit":
+                    case "AppIdNotSet":
+                    case "AppIdNotValid":
+                    case "UserAlreadySignedIn":
+                    case "ServiceUnavailable":
+                        throw;
+
+                    default:
+                        throw new UnknownServiceUnavailable(ex);
+                }
+            }
         }
 
         public async Task<(string sessionId, DateTime creationDate, string userId)> GenerateKeysAndSignUp(
