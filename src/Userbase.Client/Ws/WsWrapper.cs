@@ -247,6 +247,7 @@ namespace Userbase.Client.Ws
 
         private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, int reconnectDelay, bool timeout)
         {
+            _logger.Log("CLOSED");
             if (timeout) return;
             if (args is ClosedEventArgs e)
             {

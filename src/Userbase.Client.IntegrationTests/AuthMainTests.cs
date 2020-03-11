@@ -64,7 +64,7 @@ namespace Userbase.Client.IntegrationTests
             var sw = Stopwatch.StartNew();
             var response = await auth.SignIn(request);
             while (WsWrapper.Instance4Net == null) {}
-            while (WsWrapper.Instance4Net.State != WebSocketState.Closed)
+            while (WsWrapper.Instance4Net != null && WsWrapper.Instance4Net.State != WebSocketState.Closed)
             {
                 if (sw.Elapsed.TotalSeconds > 120)
                     WsWrapper.Instance4Net.Close("Stop Test");
