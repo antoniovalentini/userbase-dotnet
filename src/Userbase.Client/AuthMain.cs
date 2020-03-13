@@ -126,11 +126,11 @@ namespace Userbase.Client
             var dhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, dhKeySalt);
             var publicKey = DiffieHellmanUtils.GetPublicKey(dhPrivateKey);
 
-            var keySalts = new
+            var keySalts = new KeySalts
             {
-                encryptionKeySalt = Convert.ToBase64String(encryptionKeySalt),
-                dhKeySalt = Convert.ToBase64String(dhKeySalt),
-                hmacKeySalt = Convert.ToBase64String(hmacKeySalt),
+                EncryptionKeySalt = Convert.ToBase64String(encryptionKeySalt),
+                DhKeySalt = Convert.ToBase64String(dhKeySalt),
+                HmacKeySalt = Convert.ToBase64String(hmacKeySalt),
             };
             
             var request = new SignUpApiRequest
@@ -160,10 +160,10 @@ namespace Userbase.Client
             if (two != null)
                 throw two;
 
-            throw new Exception($"Unknown error during SignUp: {response.StatusCode}");
+            throw new Exception($"Unknown error during SignUp: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
         }
 
-        private (string passwordToken, dynamic passwordSalts, dynamic passwordBasedBackup) GeneratePasswordToken(string password, byte[] seed)
+        private (string passwordToken, PasswordSalts passwordSalts, PasswordBasedBackup passwordBasedBackup) GeneratePasswordToken(string password, byte[] seed)
         {
             var passwordSalt = Scrypt.GenerateSalt();
             var passwordHash = Scrypt.Hash(password, passwordSalt);
@@ -177,16 +177,16 @@ namespace Userbase.Client
 
             var passwordEncryptedSeed = AesGcmUtils.Encrypt(passwordBasedEncryptionKey, seed);
 
-            var passwordSalts = new 
+            var passwordSalts = new PasswordSalts
             {
-                passwordSalt = Convert.ToBase64String(passwordSalt),
-                passwordTokenSalt = Convert.ToBase64String(passwordTokenSalt),
+                PasswordSalt = Convert.ToBase64String(passwordSalt),
+                PasswordTokenSalt = Convert.ToBase64String(passwordTokenSalt),
             };
 
-            var passwordBasedBackup = new 
+            var passwordBasedBackup = new PasswordBasedBackup
             {
-                passwordBasedEncryptionKeySalt = Convert.ToBase64String(passwordBasedEncryptionKeySalt),
-                passwordEncryptedSeed = Convert.ToBase64String(passwordEncryptedSeed),
+                PasswordBasedEncryptionKeySalt = Convert.ToBase64String(passwordBasedEncryptionKeySalt),
+                PasswordEncryptedSeed = Convert.ToBase64String(passwordEncryptedSeed),
             };
 
             return (passwordToken, passwordSalts, passwordBasedBackup);
@@ -431,14 +431,26 @@ namespace Userbase.Client
             return null;
         }
 
-        private static async Task<Exception> ParseGenericUsernamePasswordError(HttpResponseMessage response)
+        private async Task<Exception> ParseGenericUsernamePasswordError(HttpResponseMessage response)
         {
             var data = await response.Content.ReadAsStringAsync();
-            var json = JObject.Parse(data);
-            if (json["error"].ToString() == "UsernameTooLong")
-                return new UsernameTooLong(json["maxLen"].ToString());
-            if (json["error"].ToString() == "PasswordAttemptLimitExceeded")
-                return new PasswordAttemptLimitExceeded(json["delay"].ToString());
+            try
+            {
+                var json = JObject.Parse(data);
+                switch (json["error"]?.ToString())
+                {
+                    case "UsernameTooLong":
+                        return new UsernameTooLong(json["maxLen"].ToString());
+                    case "PasswordAttemptLimitExceeded":
+                        return new PasswordAttemptLimitExceeded(json["delay"].ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(ex.Message);
+                return null;
+            }
+            
             return null;
         }
     }

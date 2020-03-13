@@ -75,6 +75,29 @@ namespace Userbase.Client.IntegrationTests
             Assert.NotNull(response.UserId);
             Assert.NotNull(response.Username);
         }
+
+        [Fact]
+        public async Task SimpleSignUp()
+        {
+            // ARRANGE
+            var email = Configuration["email"];
+            var username = Configuration["username"];
+            var password = Configuration["password"];
+            var appId = Configuration["appid"];
+
+            var config = new Config(appId);
+            var localData = new LocalData(new FakeLocalData(), new FakeLocalData());
+            var auth = new AuthMain(config, new AuthApi(config), localData, new TestLogger(_output));
+            var request = new SignUpRequest {Username = username, Password = password, RememberMe = "none", Email = email};
+
+            // ACT
+            var response = await auth.SignUp(request);
+
+            // ASSERT
+            Assert.NotNull(response.UserId);
+            Assert.NotNull(response.Username);
+            Assert.NotNull(response.Email);
+        }
     }
 
     public class FakeLocalData : IStorage
