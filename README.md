@@ -1,8 +1,30 @@
 # userbase-dotnet
-A .NET implementation of the userbase client. [More info about the official userbase project here](https://github.com/encrypted-dev/userbase).
+A .NET implementation of the userbase client. [More info about the official userbase project here](https://github.com/encrypted-dev/userbase). This porting is made only for fun and I'm not sure whether there will be future developments or not.
 
-This porting is made only for fun and I'm not sure whether there will be future developments or not. I started from the SignIn method, I can produce correct hashes and can properly login, 
-but it's not completed yet (i.e. it doesn't store any session).
+## Features
+### Initialize
+Use this API to initialize your Userbase SDK and resume a session when a user returns to your web app.
+
+- init (fifty/fifty)
+
+### Users
+Use these APIs to create/update/delete user accounts and handle logins.
+
+- signUp
+- signIn
+- ~~signOut~~
+- ~~forgotPassword~~
+- ~~updateUser~~
+- ~~deleteUser~~
+
+### Data
+Use these APIs to store and retrieve user data. All data handled by these APIs is highly-durable, immediately consistent, and end-to-end encrypted.
+
+- ~~openDatabase~~
+- ~~insertItem~~
+- ~~updateItem~~
+- ~~deleteItem~~
+- ~~putTransaction~~
 
 ## Credits
 Thanks to [CodesInChaos](https://github.com/CodesInChaos) for the [HKDF C# implementation](https://gist.github.com/CodesInChaos/8710228).
