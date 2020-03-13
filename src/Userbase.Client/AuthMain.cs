@@ -33,7 +33,7 @@ namespace Userbase.Client
             _api = api;
             _localData = localData;
             _logger = logger;
-            _ws = new Ws.WsWrapper(_config, api, _logger);
+            _ws = new WsWrapper(_config, api, _logger, _localData);
         }
 
         public async Task<SignUpResult> SignUp(SignUpRequest signUpRequest)
@@ -152,7 +152,7 @@ namespace Userbase.Client
                 return (apiResponse.SessionId, apiResponse.CreationDate, apiResponse.UserId);
             }
 
-            var one = await ParseGenericErrors(response);
+            var one = ParseGenericErrors(await response.Content.ReadAsStringAsync(), response.StatusCode);
             if (one != null)
                 throw one;
 
@@ -280,7 +280,7 @@ namespace Userbase.Client
 
             if (response.IsSuccessStatusCode) return;
 
-            var exception = await ParseGenericErrors(response);
+            var exception = ParseGenericErrors(await response.Content.ReadAsStringAsync(), response.StatusCode);
             if (exception != null)
                 throw exception;
 
@@ -293,8 +293,15 @@ namespace Userbase.Client
             {
                 if (string.IsNullOrEmpty(_ws.Session.Username)) throw new UserNotSignedIn();
 
-                // TODO
-                await _ws.SignOut();
+                try {
+                    await _ws.SignOut();
+                } catch (Exception e)
+                {
+                    var one = ParseGenericErrors(e.Message);
+                    if (one != null) throw one;
+                    throw;
+                }
+                
             }
             catch (Exception ex)
             {
@@ -347,7 +354,7 @@ namespace Userbase.Client
                 return signinDto;
             }
 
-            var one = await ParseGenericErrors(response);
+            var one = ParseGenericErrors(await response.Content.ReadAsStringAsync(), response.StatusCode);
             if (one != null)
                 throw one;
 
@@ -403,7 +410,7 @@ namespace Userbase.Client
                 return JsonConvert.DeserializeObject<GetPasswordSaltsResponse>(
                     await response.Content.ReadAsStringAsync());
 
-            var one = await ParseGenericErrors(response);
+            var one = ParseGenericErrors(await response.Content.ReadAsStringAsync(), response.StatusCode);
             if (one != null)
                 throw one;
 
@@ -417,16 +424,15 @@ namespace Userbase.Client
             throw new Exception($"Unknown error when fetching password salts: {response.StatusCode}");
         }
 
-        public static async Task<Exception> ParseGenericErrors(HttpResponseMessage response)
+        public static Exception ParseGenericErrors(string data, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
         {
-            var data = await response.Content.ReadAsStringAsync();
             if (data == "App ID not valid")
-                return new AppIdNotValid(response.StatusCode);
+                return new AppIdNotValid(statusCode);
             if (data == "UserNotFound")
                 return new UserNotFound();
-            if (response.StatusCode == HttpStatusCode.InternalServerError)
+            if (statusCode == HttpStatusCode.InternalServerError)
                 return new InternalServerError();
-            if (response.StatusCode == HttpStatusCode.GatewayTimeout)
+            if (statusCode == HttpStatusCode.GatewayTimeout)
                 return new Timeout();
             return null;
         }

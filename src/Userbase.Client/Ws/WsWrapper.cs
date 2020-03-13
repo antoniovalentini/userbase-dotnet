@@ -25,11 +25,12 @@ namespace Userbase.Client.Ws
         private readonly Config _config;
         private readonly AuthApi _api;
         private readonly ILogger _logger;
+        private readonly LocalData _localData;
         private byte[] _encryptedValidationMessage;
         private string _seedString;
         private bool _connectionResolved;
         private Action _resolveConnection;
-        private Action _rejectConnection;
+        private Action<IError> _rejectConnection;
 
         private const string WsAlreadyConnected = "Web Socket already connected";
 
@@ -45,16 +46,17 @@ namespace Userbase.Client.Ws
         private DiffieHellmanUtils _dh;
         private readonly Dictionary<string, WsRequest> _pendingRequests;
 
-        public WsWrapper(Config config, AuthApi api, ILogger logger)
+        public WsWrapper(Config config, AuthApi api, ILogger logger, LocalData localData)
         {
             _config = config;
             _api = api;
             _logger = logger;
+            _localData = localData;
             _clientId = Guid.NewGuid().ToString();
             _pendingRequests = new Dictionary<string, WsRequest>();
         }
 
-        public void Init(Action resolveConnection, Action rejectConnection, SignInSession session, string seedString, string rememberMe, UserState state)
+        public void Init(Action resolveConnection = null, Action<IError> rejectConnection = null, SignInSession session = null, string seedString = null, string rememberMe = null, UserState state = null)
         {
             if (_pingTimeout > 0) ClearTimeout(_pingTimeout);
 
@@ -94,10 +96,43 @@ namespace Userbase.Client.Ws
             // TODO
         }
 
+        public void Close(string code = "")
+        {
+            if (Instance4Net != null)
+                Instance4Net.Close(code);
+            else 
+                Init();
+        }
+
         public async Task SignOut()
         {
-            // TODO
-            await Task.FromResult(true);
+            var username = Session.Username;
+            var connectionResolved = _connectionResolved;
+            var rejectConnection = _rejectConnection;
+
+            try
+            {
+                _localData.SignOutSession(_rememberMe, username);
+
+                var sessionId = Session.SessionId;
+
+                if (_reconnecting) throw new Reconnecting();
+
+                const string action = "SignOut";
+                var reqParams = new RequestParams {SessionId = sessionId};
+                await Request(action, reqParams);
+
+                Close();
+
+                if (!connectionResolved)
+                    rejectConnection?.Invoke(new WebSocketError("Canceled", username));
+
+            } catch {
+                if (!connectionResolved)
+                    rejectConnection?.Invoke(new WebSocketError("Canceled", username));
+
+                throw;
+            }
         }
 
         // TODO: handle state
@@ -403,7 +438,7 @@ namespace Userbase.Client.Ws
                 return _serverPublicKey;
             }
 
-            var one = await AuthMain.ParseGenericErrors(response);
+            var one = AuthMain.ParseGenericErrors(await response.Content.ReadAsStringAsync(), response.StatusCode);
             if (one != null)
                 throw one;
 

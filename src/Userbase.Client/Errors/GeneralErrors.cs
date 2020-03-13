@@ -141,6 +141,14 @@ namespace Userbase.Client.Errors
     {
         public Timeout() {Status = HttpStatusCode.GatewayTimeout;}
     }
+
+    public class Reconnecting : Exception, IError
+    {
+        public string Name => "ServiceUnavailable";
+        public HttpStatusCode Status => HttpStatusCode.ServiceUnavailable;
+        public Reconnecting() : base("Reconnecting") {}
+    }
+
     public class UnknownServiceUnavailable : Exception, IError
     {
         public string Name => "ServiceUnavailable";

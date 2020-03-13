@@ -6,5 +6,7 @@ namespace Userbase.Client.Ws.Models
     {
         [JsonProperty("validationMessage")]
         public string ValidationMessage { get; set; }
+        [JsonProperty("sessionId")]
+        public string SessionId { get; set; }
     }
 }

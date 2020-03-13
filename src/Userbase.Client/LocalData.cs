@@ -100,6 +100,12 @@ namespace Userbase.Client
                 return default;
             }
         }
+
+        // TODO
+        public void SignOutSession(string rememberMe, string username)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public interface IStorage
