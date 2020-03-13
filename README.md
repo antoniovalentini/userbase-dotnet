@@ -10,9 +10,9 @@ Use this API to initialize your Userbase SDK and resume a session when a user re
 ### Users
 Use these APIs to create/update/delete user accounts and handle logins.
 
-- signUp
-- signIn
-- ~~signOut~~
+- signUp (missing localData)
+- signIn (missing localData)
+- signOut (missing localData)
 - ~~forgotPassword~~
 - ~~updateUser~~
 - ~~deleteUser~~
