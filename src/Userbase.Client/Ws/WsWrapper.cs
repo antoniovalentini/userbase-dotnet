@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using SuperSocket.ClientEngine;
 using Userbase.Client.Api;
 using Userbase.Client.Crypto;
+using Userbase.Client.Data;
 using Userbase.Client.Errors;
 using Userbase.Client.Models;
 using Userbase.Client.Ws.Models;
@@ -88,7 +89,12 @@ namespace Userbase.Client.Ws
 
             _pendingRequests.Clear();
 
-            State = state ?? new UserState();
+            State = state ?? new UserState
+            {
+                Databases = new Dictionary<string, Database>(),
+                dbIdToHash = null,
+                DbNameToHash = new Dictionary<string, string>(),
+            };
         }
 
         private void ClearTimeout(int pingTimeout)

@@ -82,13 +82,16 @@ namespace Userbase.Client.Data
         /// <param name="timeout">Timeout in ms</param>
         private static void SetTimeout(Action callback, int timeout)
         {
-            var sw = Stopwatch.StartNew();
-            while(true)
+            Task.Factory.StartNew(() =>
             {
-                if (sw.ElapsedMilliseconds <= timeout) continue;
-                callback?.Invoke();
-                break;
-            }
+                var sw = Stopwatch.StartNew();
+                while(true)
+                {
+                    if (sw.ElapsedMilliseconds <= timeout) continue;
+                    callback?.Invoke();
+                    break;
+                }
+            });
         }
 
         private async Task OpenDatabaseInternal(string dbNameHash, Action<List<Database.Item>> changeHandler, (Guid dbId, string encryptedDbKey, string encryptedDbName) newDatabaseParams)
@@ -102,7 +105,8 @@ namespace Userbase.Client.Data
                     firstMessageFromWebSocket.SetResult(0);
                 }
 
-                SetTimeout(() => firstMessageFromWebSocket.SetException(new DatabaseAlreadyOpening()), 20000);
+                // TODO clear timeout before decommenting this
+                // SetTimeout(() => firstMessageFromWebSocket.SetException(new DatabaseAlreadyOpening()), 20000);
                 
                 /*const firstMessageFromWebSocket = new Promise((resolve, reject) =>
                 {
@@ -138,12 +142,18 @@ namespace Userbase.Client.Data
                 }
 
                 const string action = "OpenDatabase";
-                var paramss = new RequestParams {DbNameHash = dbNameHash, NewDatabaseParams = newDatabaseParams};
+                var paramss = new RequestParams {DbNameHash = dbNameHash, NewDatabaseParams = new DatabaseParams(newDatabaseParams)};
 
                 try
                 {
                     await _ws.Request(action, paramss);
-                    await firstMessageFromWebSocket.Task;
+                    //await firstMessageFromWebSocket.Task;
+
+                    // TODO: test to replace SetTimeout
+                    if (firstMessageFromWebSocket.Task == await Task.WhenAny(firstMessageFromWebSocket.Task, Task.Delay(20000))) 
+                        await firstMessageFromWebSocket.Task;
+                    else
+                        throw new TimeoutException("firstMessageFromWebSocket took too long (20s)");
                 } catch (WebException e) {
                     if (e.Response == null) throw;
 
