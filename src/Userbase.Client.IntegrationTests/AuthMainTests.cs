@@ -107,7 +107,53 @@ namespace Userbase.Client.IntegrationTests
             Assert.NotNull(response.Username);
             Assert.NotNull(response.Email);
         }
+
+        [Fact]
         public async Task CompleteTest() {
+        
+            // ARRANGE
+            var username = Configuration["username"];
+            var password = Configuration["password"];
+            var appId = Configuration["appid"];
+
+            var config = new Config(appId);
+            var localData = new LocalData(new FakeLocalData(), new FakeLocalData());
+            var logger = new TestLogger(_output);
+            var api = new AuthApi(config);
+            var ws = new WsWrapper(config, api, logger, localData);
+            var auth = new AuthMain(config, api, localData, ws, logger);
+            var signInRequest = new SignInRequest {Username = username, Password = password, RememberMe = "none"};
+
+            var db = new Db(ws);
+            void ChangeHandler(List<Database.Item> items)
+            {
+                var output = _output;
+                output.WriteLine($"Received {items.Count} items from database.");
+            }
+
+            // ACT
+            var response = await auth.SignIn(signInRequest);
+            var promise = new TaskCompletionSource<int>();
+            #pragma warning disable 4014
+            Task.Factory.StartNew(() =>
+            #pragma warning restore 4014
+            {
+                var scopedWs = ws;
+                var scopedLogger = logger;
+                while (!scopedWs.Keys.Init) {}
+                scopedLogger.Log("KEYS INIT DONE");
+                promise.SetResult(0);
+            });
+
+            await promise.Task;
+
+            await db.OpenDatabase(new OpenDatabaseRequest {DatabaseName = "todos", ChangeHandler = ChangeHandler});
+
+            // ASSERT
+            Assert.NotNull(response.UserId);
+            Assert.NotNull(response.Username);
+            Assert.NotNull(response.Email);
+        }
     }
 
     public class FakeLocalData : IStorage
