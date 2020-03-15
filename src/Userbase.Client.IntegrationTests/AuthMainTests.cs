@@ -23,9 +23,10 @@ namespace Userbase.Client.IntegrationTests
             _output = output;
         }
 
-        public void Log(string message)
+        public async Task Log(string message)
         {
             _output.WriteLine($"{DateTime.Now} - {message}");
+            await Task.FromResult(0);
         }
     }
 

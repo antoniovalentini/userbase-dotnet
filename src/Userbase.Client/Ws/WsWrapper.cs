@@ -223,11 +223,18 @@ namespace Userbase.Client.Ws
                         break;
                     case "ping":
                         //this.heartbeat()
-                        _logger.Log("SENT - PONG");
+                        _ = _logger.Log("SENT - PONG");
                         const string action = "Pong";
                         Instance4Net.Send(JsonConvert.SerializeObject(new {action}));
                         break;
                     case "applytransactions":
+                        // TODO: in progress
+                        var dbId = msg["dbId"].ToString();
+                        var dbNameHash = msg["dbNameHash"].ToString();// || State.dbIdToHash[dbId]
+                        if (!State.Databases.TryGetValue(dbNameHash, out var database))
+                            throw new Exception("Missing database");
+                        _ = _logger.Log("DB - RECEIVED MESSAGE");
+                        database.ReceivedMessage();
                         break;
                     case "signout":
                     case "updateuser":
@@ -350,7 +357,10 @@ namespace Userbase.Client.Ws
         private async Task ValidateKey()
         {
             if (_dh == null)
+            {
+                _ = _logger.Log("FETCH SERVER PUBLIC KEY");
                 _dh = new DiffieHellmanUtils(await GetServerPublicKey());
+            }
 
             var sharedKey = _dh.GetSharedKeyWithServer(Keys.DhPrivateKey);
             var validationMessage = Convert.ToBase64String(AesGcmUtils.Decrypt(sharedKey, _encryptedValidationMessage));

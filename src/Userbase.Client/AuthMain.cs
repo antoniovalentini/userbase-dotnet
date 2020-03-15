@@ -338,6 +338,7 @@ namespace Userbase.Client
             HttpResponseMessage response;
             try
             {
+                _ = _logger.Log("API LOGIN");
                 response = await _api.SignIn(lowerCaseUsername, passwordToken);
             }
             catch (Exception e)
@@ -394,6 +395,7 @@ namespace Userbase.Client
 
         public async Task<GetPasswordSaltsResponse> GetPasswordSaltsOverRestEndpoint(string username)
         {
+            _ = _logger.Log("FETCH PASSWORD SALTS");
             HttpResponseMessage response;
             try
             {

@@ -1,7 +1,9 @@
-﻿namespace Userbase.Client.Ws
+﻿using System.Threading.Tasks;
+
+namespace Userbase.Client.Ws
 {
     public interface ILogger
     {
-        void Log(string message);
+        Task Log(string message);
     }
 }
