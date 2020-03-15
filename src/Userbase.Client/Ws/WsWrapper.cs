@@ -35,13 +35,13 @@ namespace Userbase.Client.Ws
         private const string WsAlreadyConnected = "Web Socket already connected";
 
         private bool _connected;
-        private bool _reconnecting;
+        public bool Reconnecting { get; private set; }
         private bool _reconnected;
         public SignInSession Session { get; } = new SignInSession();
         private string _rememberMe;
-        private UserState _state;
+        public UserState State { get; private set; }
         private int _pingTimeout;
-        private readonly Keys _keys = new Keys();
+        public Keys Keys { get; } = new Keys();
         private readonly string _clientId;
         private DiffieHellmanUtils _dh;
         private readonly Dictionary<string, WsRequest> _pendingRequests;
@@ -82,13 +82,13 @@ namespace Userbase.Client.Ws
             Session.CreationDate = session != null && !string.IsNullOrEmpty(session.CreationDate) ? session.CreationDate : "";
 
             _seedString = seedString;
-            _keys.Clear();
+            Keys.Clear();
 
             _rememberMe = rememberMe;
 
             _pendingRequests.Clear();
 
-            _state = state ?? new UserState();
+            State = state ?? new UserState();
         }
 
         private void ClearTimeout(int pingTimeout)
@@ -116,7 +116,7 @@ namespace Userbase.Client.Ws
 
                 var sessionId = Session.SessionId;
 
-                if (_reconnecting) throw new Reconnecting();
+                if (Reconnecting) throw new Reconnecting();
 
                 const string action = "SignOut";
                 var reqParams = new RequestParams {SessionId = sessionId};
@@ -149,7 +149,7 @@ namespace Userbase.Client.Ws
             var timeoutToOpenWebSocket = SetTimeout(
                 () =>
                 {
-                    if (!_connected && !_reconnecting)
+                    if (!_connected && !Reconnecting)
                     {
                         timeout = true;
                         throw new WebSocketError("timeout", "");
@@ -210,7 +210,7 @@ namespace Userbase.Client.Ws
                         _connected = true;
 
                         var connectionMessage = JsonConvert.DeserializeObject<ConnectionMessage>(e.Message);
-                        _keys.Salts = connectionMessage.KeySalts;
+                        Keys.Salts = connectionMessage.KeySalts;
                         _encryptedValidationMessage = connectionMessage.EncryptedValidationMessage.Data;
 
                         await SetKeys(seedString);
@@ -299,8 +299,8 @@ namespace Userbase.Client.Ws
                         ? 0
                         : (reconnectDelay > 0 ? reconnectDelay + BackoffRetryDelay : 1000);
 
-                    _reconnecting = true;
-                    await Reconnect(session, seedString, rememberMe, !_reconnected && _state != null ? _state : null, delay);
+                    Reconnecting = true;
+                    await Reconnect(session, seedString, rememberMe, !_reconnected && State != null ? State : null, delay);
                 }
                 else if (e.Code == 3001 /*statusCodes['Client Already Connected']*/)
                 {
@@ -321,20 +321,20 @@ namespace Userbase.Client.Ws
 
         private async Task SetKeys(string seedString)
         {
-            if (_keys.Init) return;
+            if (Keys.Init) return;
 
             if (string.IsNullOrEmpty(seedString)) throw new WebSocketError("Missing seed", Session.Username);
-            if (_keys.Salts == null) throw new WebSocketError("Missing salts", Session.Username);
+            if (Keys.Salts == null) throw new WebSocketError("Missing salts", Session.Username);
             if (string.IsNullOrEmpty(_seedString)) _seedString = seedString;
 
             var seed = Convert.FromBase64String(seedString);
-            _keys.EncryptionKey = AesGcmUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.EncryptionKeySalt));
-            _keys.DhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.DhKeySalt));
-            _keys.HmacKey = HmacUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(_keys.Salts.HmacKeySalt));
+            Keys.EncryptionKey = AesGcmUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(Keys.Salts.EncryptionKeySalt));
+            Keys.DhPrivateKey = DiffieHellmanUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(Keys.Salts.DhKeySalt));
+            Keys.HmacKey = HmacUtils.ImportKeyFromMaster(seed, Convert.FromBase64String(Keys.Salts.HmacKeySalt));
 
             await ValidateKey();
 
-            _keys.Init = true;
+            Keys.Init = true;
 
             _resolveConnection?.Invoke();
 
@@ -346,7 +346,7 @@ namespace Userbase.Client.Ws
             if (_dh == null)
                 _dh = new DiffieHellmanUtils(await GetServerPublicKey());
 
-            var sharedKey = _dh.GetSharedKeyWithServer(_keys.DhPrivateKey);
+            var sharedKey = _dh.GetSharedKeyWithServer(Keys.DhPrivateKey);
             var validationMessage = Convert.ToBase64String(AesGcmUtils.Decrypt(sharedKey, _encryptedValidationMessage));
 
             await Request("ValidateKey", new RequestParams { ValidationMessage = validationMessage });
@@ -382,7 +382,7 @@ namespace Userbase.Client.Ws
             throw new TooManyRequests(retryDelay);
         }
 
-        private async Task Request(string action, RequestParams reqParams)
+        public async Task Request(string action, RequestParams reqParams)
         {
             // generate a new requestId
             var requestId = Guid.NewGuid().ToString();

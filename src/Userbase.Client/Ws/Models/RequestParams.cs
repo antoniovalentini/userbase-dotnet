@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using Newtonsoft.Json;
 
 namespace Userbase.Client.Ws.Models
 {
@@ -8,5 +9,8 @@ namespace Userbase.Client.Ws.Models
         public string ValidationMessage { get; set; }
         [JsonProperty("sessionId")]
         public string SessionId { get; set; }
+
+        public string DbNameHash { get; set; }
+        public (Guid dbId, string encryptedDbKey, string encryptedDbName) NewDatabaseParams { get; set; }
     }
 }

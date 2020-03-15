@@ -83,5 +83,26 @@ namespace Userbase.Client.Crypto
 
             return result;
         }
+
+        private const int BIT_SIZE = 256;
+
+        public static byte[] GenerateKey()
+        {
+            return Utils.GenerateRandom(BIT_SIZE / 8);
+        }
+
+        public static string GetKeyStringFromKey(byte[] dbKey)
+        {
+            //const rawKey = await window.crypto.subtle.exportKey(RAW_KEY_TYPE, key)
+            return Convert.ToBase64String(dbKey);
+        }
+
+        public static string EncryptString(byte[] key, string plaintextString)
+        {
+            var plaintextBytes = Encoding.UTF8.GetBytes(plaintextString);
+            var plaintextArrayBuffer = Utils.FillOddsWithZeros(plaintextBytes);
+            var encrypted = Encrypt(key, plaintextArrayBuffer);
+            return Convert.ToBase64String(encrypted);
+        }
     }
 }

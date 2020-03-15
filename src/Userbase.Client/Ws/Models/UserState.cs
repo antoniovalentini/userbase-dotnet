@@ -1,9 +1,12 @@
-﻿namespace Userbase.Client.Ws.Models
+﻿using System.Collections.Generic;
+using Userbase.Client.Data;
+
+namespace Userbase.Client.Ws.Models
 {
     public class UserState
     {
-        public object databases;
+        public Dictionary<string, Database> Databases;
         public object dbIdToHash;
-        public object dbNameToHash;
+        public Dictionary<string, string> DbNameToHash;
     }
 }

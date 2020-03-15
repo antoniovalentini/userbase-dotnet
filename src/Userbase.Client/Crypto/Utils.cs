@@ -26,9 +26,9 @@ namespace Userbase.Client.Crypto
             return result;
         }
 
-        public static byte[] GenerateRandom(int size)
+        public static byte[] GenerateRandom(int byteSize)
         {
-            var result = new byte[size];
+            var result = new byte[byteSize];
             using var rngCsp = new RNGCryptoServiceProvider();
             rngCsp.GetBytes(result);
             return result;
