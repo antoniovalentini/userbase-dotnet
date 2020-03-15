@@ -34,7 +34,7 @@ namespace Userbase.Client.Data
         }
 
         public Action ReceivedMessage { get; set; }
-        public Func<List<Item>> OnChange { get; internal set; }
+        public Action<List<Item>> OnChange { get; internal set; }
         public bool Init { get; set; }
 
         private readonly Queue _applyTransactionsQueue;
@@ -45,7 +45,7 @@ namespace Userbase.Client.Data
         private object _dbKey;
         private object[] _unverifiedTransactions;
 
-        public Database(Func<List<Item>> changeHandler, Action receivedMessage)
+        public Database(Action<List<Item>> changeHandler, Action receivedMessage)
         {
             //ChangeHandler = changeHandler;
             //ReceivedMessage = receivedMessage;

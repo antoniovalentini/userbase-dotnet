@@ -20,7 +20,7 @@ namespace Userbase.Client.Ws
     {
         private const int BackoffRetryDelay = 1000;
 
-        public static WebSocket Instance4Net;
+        public WebSocket Instance4Net { get; private set; }
 
         private readonly Config _config;
         private readonly AuthApi _api;

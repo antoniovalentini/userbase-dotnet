@@ -27,13 +27,13 @@ namespace Userbase.Client
         private readonly ILogger _logger;
         private readonly WsWrapper _ws;
 
-        public AuthMain(Config config, AuthApi api, LocalData localData, ILogger logger)
+        public AuthMain(Config config, AuthApi api, LocalData localData, WsWrapper ws, ILogger logger)
         {
             _config = config;
             _api = api;
             _localData = localData;
             _logger = logger;
-            _ws = new WsWrapper(_config, api, _logger, _localData);
+            _ws = ws;
         }
 
         public async Task<SignUpResult> SignUp(SignUpRequest signUpRequest)

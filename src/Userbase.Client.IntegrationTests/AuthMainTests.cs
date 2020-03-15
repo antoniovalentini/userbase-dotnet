@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Userbase.Client.Api;
+using Userbase.Client.Data;
+using Userbase.Client.Data.Models;
 using Userbase.Client.Models;
 using Userbase.Client.Ws;
 using WebSocket4Net;
@@ -49,7 +52,7 @@ namespace Userbase.Client.IntegrationTests
         /// </summary>
         /// <returns></returns>
         [Fact]
-        public async Task SimpleTest()
+        public async Task SimpleSignIn()
         {
             // ARRANGE
             var username = Configuration["username"];
@@ -57,17 +60,20 @@ namespace Userbase.Client.IntegrationTests
             var appId = Configuration["appid"];
             var config = new Config(appId);
             var localData = new LocalData(new FakeLocalData(), new FakeLocalData());
-            var auth = new AuthMain(config, new AuthApi(config), localData, new TestLogger(_output));
+            var logger = new TestLogger(_output);
+            var api = new AuthApi(config);
+            var ws = new WsWrapper(config, api, logger, localData);
+            var auth = new AuthMain(config, api, localData, ws, logger);
             var request = new SignInRequest {Username = username, Password = password, RememberMe = "none"};
 
             // ACT
             var sw = Stopwatch.StartNew();
             var response = await auth.SignIn(request);
-            while (WsWrapper.Instance4Net == null) {}
-            while (WsWrapper.Instance4Net != null && WsWrapper.Instance4Net.State != WebSocketState.Closed)
+            while (ws.Instance4Net == null) {}
+            while (ws.Instance4Net != null && ws.Instance4Net.State != WebSocketState.Closed)
             {
                 if (sw.Elapsed.TotalSeconds > 120)
-                    WsWrapper.Instance4Net.Close("Stop Test");
+                    ws.Instance4Net.Close("Stop Test");
             }
             sw.Stop();
 
@@ -87,7 +93,10 @@ namespace Userbase.Client.IntegrationTests
 
             var config = new Config(appId);
             var localData = new LocalData(new FakeLocalData(), new FakeLocalData());
-            var auth = new AuthMain(config, new AuthApi(config), localData, new TestLogger(_output));
+            var logger = new TestLogger(_output);
+            var api = new AuthApi(config);
+            var ws = new WsWrapper(config, api, logger, localData);
+            var auth = new AuthMain(config, api, localData, ws, logger);
             var request = new SignUpRequest {Username = username, Password = password, RememberMe = "none", Email = email};
 
             // ACT

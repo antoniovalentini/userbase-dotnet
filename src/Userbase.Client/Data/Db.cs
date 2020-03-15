@@ -91,7 +91,7 @@ namespace Userbase.Client.Data
             }
         }
 
-        private async Task OpenDatabaseInternal(string dbNameHash, Func<List<Database.Item>> changeHandler, (Guid dbId, string encryptedDbKey, string encryptedDbName) newDatabaseParams)
+        private async Task OpenDatabaseInternal(string dbNameHash, Action<List<Database.Item>> changeHandler, (Guid dbId, string encryptedDbKey, string encryptedDbName) newDatabaseParams)
         {
             try
             {
@@ -131,8 +131,7 @@ namespace Userbase.Client.Data
                     // database is already open, can return successfully
                     if (database.Init)
                     {
-                        changeHandler = () => database.GetItems();
-                        changeHandler();
+                        changeHandler(database.GetItems());
                         database.ReceivedMessage();
                         return;
                     }
