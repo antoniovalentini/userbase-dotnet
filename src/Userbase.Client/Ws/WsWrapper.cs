@@ -92,7 +92,7 @@ namespace Userbase.Client.Ws
             State = state ?? new UserState
             {
                 Databases = new Dictionary<string, Database>(),
-                dbIdToHash = null,
+                DbIdToHash = new Dictionary<string, string>(),
                 DbNameToHash = new Dictionary<string, string>(),
             };
         }
@@ -233,8 +233,70 @@ namespace Userbase.Client.Ws
                         var dbNameHash = msg["dbNameHash"].ToString();// || State.dbIdToHash[dbId]
                         if (!State.Databases.TryGetValue(dbNameHash, out var database))
                             throw new Exception("Missing database");
-                        _ = _logger.Log("DB - RECEIVED MESSAGE");
-                        database.ReceivedMessage();
+
+                        // queue guarantees transactions will be applied in the order they are received from the server
+                        if (database.ApplyTransactionsQueue.Count == 0) 
+                        {
+                            // take a spot in the queue and proceed applying so the next caller knows queue is not empty
+                            database.ApplyTransactionsQueue.Enqueue(null);
+                        } else {
+                            // wait until prior batch in queue finishes applying successfully
+                            var promise = new TaskCompletionSource<int>();
+                            void Resolve()
+                            {
+                                var localPromise = promise;
+                                localPromise.SetResult(0);
+                            }
+                            database.ApplyTransactionsQueue.Enqueue(Resolve);
+                            await promise.Task;
+                        }
+
+                        var openingDatabase = msg["dbNameHash"] != null && msg["dbKey"] != null;
+                        if (openingDatabase)
+                        {
+                            var dbKeyString = AesGcmUtils.DecryptString(Keys.EncryptionKey, msg["dbKey"].ToString());
+                            database.DbKeyString = dbKeyString;
+                            // TODO
+                            //database.dbKey = await AesGcmUtils.GetKeyFromKeyString(dbKeyString);
+                        }
+
+                        //if (!database.dbKey) throw new Error('Missing db key')
+
+                        if (msg["bundle"] != null) {
+                            /*const bundleSeqNo = message.bundleSeqNo
+                            const base64Bundle = message.bundle
+                            const compressedString = await crypto.aesGcm.decryptString(database.dbKey, base64Bundle)
+                            const plaintextString = LZString.decompress(compressedString)
+                            const bundle = JSON.parse(plaintextString)
+
+                            database.applyBundle(bundle, bundleSeqNo)*/
+                        }
+
+                        /*const newTransactions = message.transactionLog
+                            await database.applyTransactions(newTransactions)*/
+
+                        if (!database.Init)
+                        {
+                            State.DbIdToHash[dbId] = dbNameHash;
+                            database.DbId = dbId;
+                            database.Init = true;
+                            _ = _logger.Log("DB - RECEIVED MESSAGE");
+                            database.ReceivedMessage();
+                        }
+
+                        if (msg["buildBundle"] != null)
+                        {
+                            BuildBundle(database);
+                        }
+
+                        // start applying next batch in queue when this one is finished applying successfully
+                        database.ApplyTransactionsQueue.Dequeue();
+                        if (database.ApplyTransactionsQueue.Count > 0)
+                        {
+                            var startApplyingNextBatchInQueue = database.ApplyTransactionsQueue.Peek();
+                            startApplyingNextBatchInQueue();
+                        }
+
                         break;
                     case "signout":
                     case "updateuser":
@@ -291,6 +353,11 @@ namespace Userbase.Client.Ws
                 _logger.Log($"ERROR - {exception.Message}");
             }
 
+        }
+
+        private void BuildBundle(Database database)
+        {
+            throw new NotImplementedException();
         }
 
         private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, int reconnectDelay, bool timeout)

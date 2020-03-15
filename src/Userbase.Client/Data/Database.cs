@@ -36,8 +36,10 @@ namespace Userbase.Client.Data
         public Action ReceivedMessage { get; set; }
         public Action<List<Item>> OnChange { get; internal set; }
         public bool Init { get; set; }
+        public string DbKeyString { get; set; }
+        public string DbId { get; set; }
 
-        private readonly Queue _applyTransactionsQueue;
+        public readonly Queue<Action> ApplyTransactionsQueue;
         private readonly Dictionary<string, Item> _items;
         private readonly SortedSet<ItemIndex> _itemsIndex;
         private int _lastSeqNo;
@@ -65,7 +67,7 @@ namespace Userbase.Client.Data
             ReceivedMessage = receivedMessage;
 
             // Queue that ensures 'ApplyTransactions' executes one at a time
-            _applyTransactionsQueue = new Queue();
+            ApplyTransactionsQueue = new Queue<Action>();
         }
 
         public List<Item> GetItems()

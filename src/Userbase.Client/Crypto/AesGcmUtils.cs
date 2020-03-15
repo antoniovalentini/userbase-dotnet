@@ -104,5 +104,13 @@ namespace Userbase.Client.Crypto
             var encrypted = Encrypt(key, plaintextArrayBuffer);
             return Convert.ToBase64String(encrypted);
         }
+
+        public static string DecryptString(byte[] key, string encryptedString)
+        {
+            var encryptedArrayBuffer = Convert.FromBase64String(encryptedString);
+            var plaintextArrayBuffer = Decrypt(key, encryptedArrayBuffer);
+            var plaintextString = Utils.ArrayBufferToString(plaintextArrayBuffer);
+            return plaintextString;
+        }
     }
 }

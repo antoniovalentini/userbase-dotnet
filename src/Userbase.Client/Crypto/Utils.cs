@@ -33,5 +33,49 @@ namespace Userbase.Client.Crypto
             rngCsp.GetBytes(result);
             return result;
         }
+
+        private const int ONE_KB = 1024;
+        private const int TEN_KB = 10 * ONE_KB;
+        // https://stackoverflow.com/a/20604561/11601853
+        public static string ArrayBufferToString(byte[] buf)
+        {
+            throw new System.NotImplementedException();
+            var bufView = GetShortArray(buf);
+            var length = bufView.Length;
+            var result = "";
+            var chunkSize = TEN_KB; // using chunks prevents stack from blowing up
+
+            for (var i = 0; i < length; i += chunkSize) {
+                if (i + chunkSize > length)
+                {
+                    chunkSize = length - i;
+                }
+
+                var chunk = bufView.SubArray(i, chunkSize);
+                //result += String.fromCharCode.apply(null, chunk);
+            }
+
+            return result;
+        }
+
+        private static short[] GetShortArray(byte[] pBaits)
+        {
+            int length = pBaits.Length / 2 + pBaits.Length % 2;
+            short[] ret = new short[length];
+            int j = 0;
+            for (int i = 0; i < pBaits.Length; i += 2)
+            {
+                ret[j] = System.BitConverter.ToInt16(pBaits, i);
+                j++;
+            }
+            return (ret);
+        }
+
+        public static T[] SubArray<T>(this T[] data, int index, int length)
+        {
+            T[] result = new T[length];
+            System.Array.Copy(data, index, result, 0, length);
+            return result;
+        }
     }
 }
