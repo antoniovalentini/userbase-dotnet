@@ -107,6 +107,7 @@ namespace Userbase.Client.IntegrationTests
             Assert.NotNull(response.Username);
             Assert.NotNull(response.Email);
         }
+        public async Task CompleteTest() {
     }
 
     public class FakeLocalData : IStorage
