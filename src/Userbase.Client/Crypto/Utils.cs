@@ -39,7 +39,7 @@ namespace Userbase.Client.Crypto
         // https://stackoverflow.com/a/20604561/11601853
         public static string ArrayBufferToString(byte[] buf)
         {
-            throw new System.NotImplementedException();
+            throw new System.NotImplementedException("ArrayBufferToString not implemented");
             var bufView = GetShortArray(buf);
             var length = bufView.Length;
             var result = "";

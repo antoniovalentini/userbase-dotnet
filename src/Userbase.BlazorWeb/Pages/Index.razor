@@ -17,7 +17,7 @@
 
 <label>@_labelValue</label>
 
-<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+<button @onclick="SignIn" disabled="@(!IsConnected)">Sign In</button>
 <button @onclick="OpenDb" disabled="@(!IsAuth)">Open DB</button>
 <button @onclick="CloseWs" disabled="@(!WsOpen)">Close WS</button>
 
@@ -51,7 +51,7 @@
         await _hubConnection.StartAsync();
     }
 
-    async Task Send()
+    async Task SignIn()
     {
         var username = Configuration["ub_username"];
         var password = Configuration["ub_password"];

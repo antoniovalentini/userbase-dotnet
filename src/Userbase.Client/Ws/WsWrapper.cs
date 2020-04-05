@@ -14,6 +14,7 @@ using Userbase.Client.Models;
 using Userbase.Client.Ws.Models;
 using Userbase.Client.Ws.Errors;
 using WebSocket4Net;
+// ReSharper disable AssignmentIsFullyDiscarded
 
 namespace Userbase.Client.Ws
 {
@@ -200,7 +201,7 @@ namespace Userbase.Client.Ws
         private async Task OnMessageReceived(object sender, MessageReceivedEventArgs e, WebSocket webSocket, string seedString, SignInSession session)
         {
             //_logger.Log(sender.ToString());
-            _logger.Log($"RECEIVED - {e.Message}");
+            _ = _logger.Log($"RECEIVED - {e.Message}");
             try
             {
                 var msg = JObject.Parse(e.Message);
@@ -350,14 +351,14 @@ namespace Userbase.Client.Ws
             }
             catch (Exception exception)
             {
-                _logger.Log($"ERROR - {exception.Message}");
+                _ = _logger.Log($"ERROR - {exception.Message}");
             }
 
         }
 
         private void BuildBundle(Database database)
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException("BuildBundle not implemented");
         }
 
         private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, int reconnectDelay, bool timeout)
@@ -483,7 +484,7 @@ namespace Userbase.Client.Ws
                 @params = reqParams,
             });
             Instance4Net.Send(message);
-            _logger.Log($"SENT - {message}");
+            _ = _logger.Log($"SENT - {message}");
 
             // wait for the response to arrive
         }
