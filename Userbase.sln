@@ -3,22 +3,22 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29728.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client", "Userbase.Client\Userbase.Client.csproj", "{52CC1C4B-4E39-4BF5-970C-F3F2EB0B1E84}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client", "src\Userbase.Client\Userbase.Client.csproj", "{52CC1C4B-4E39-4BF5-970C-F3F2EB0B1E84}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client.IntegrationTests", "Userbase.Client.IntegrationTests\Userbase.Client.IntegrationTests.csproj", "{018D6D3D-641B-4076-8BFD-E8A2C21BD9D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client.IntegrationTests", "src\Userbase.Client.IntegrationTests\Userbase.Client.IntegrationTests.csproj", "{018D6D3D-641B-4076-8BFD-E8A2C21BD9D4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{19386A8D-9E54-4BC8-8151-BDBCE1E4CFF5}"
 	ProjectSection(SolutionItems) = preProject
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptSharp", "CryptSharp\CryptSharp.csproj", "{7D9E0578-2611-4617-A3CE-9817276B69BA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CryptSharp", "src\CryptSharp\CryptSharp.csproj", "{7D9E0578-2611-4617-A3CE-9817276B69BA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Web", "Userbase.Web\Userbase.Web.csproj", "{BBB68CC7-A3EF-4596-9029-837C85D67839}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Web", "src\Userbase.Web\Userbase.Web.csproj", "{BBB68CC7-A3EF-4596-9029-837C85D67839}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client.UnitTests", "Userbase.Client.UnitTests\Userbase.Client.UnitTests.csproj", "{386942CC-0F73-46DC-AF2A-86972F10D794}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Userbase.Client.UnitTests", "src\Userbase.Client.UnitTests\Userbase.Client.UnitTests.csproj", "{386942CC-0F73-46DC-AF2A-86972F10D794}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Userbase.BlazorWeb", "Userbase.BlazorWeb\Userbase.BlazorWeb.csproj", "{3872FB51-D3AD-47A8-B0EB-87176D035303}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Userbase.BlazorWeb", "src\Userbase.BlazorWeb\Userbase.BlazorWeb.csproj", "{3872FB51-D3AD-47A8-B0EB-87176D035303}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
