@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Userbase.Client.Api;
@@ -40,12 +42,10 @@ namespace Userbase.Client.IntegrationTests
         {
             _output = output;
 
-            // the type specified here is just so the secrets library can
-            // find the UserSecretId we added in the csproj file
-            var builder = new ConfigurationBuilder()
-                .AddUserSecrets<AuthMainTests>();
-
-            Configuration = builder.Build();
+            Configuration = new ConfigurationBuilder()
+                .SetBasePath(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location))
+                .AddJsonFile("appsettings.test.json", false)
+                .Build();
         }
 
         /// <summary>
