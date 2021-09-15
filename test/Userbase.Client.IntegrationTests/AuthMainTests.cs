@@ -56,6 +56,7 @@ namespace Userbase.Client.IntegrationTests
         public async Task SimpleSignIn()
         {
             // ARRANGE
+            var userId = Configuration["userid"];
             var username = Configuration["username"];
             var password = Configuration["password"];
             var appId = Configuration["appid"];
@@ -73,13 +74,14 @@ namespace Userbase.Client.IntegrationTests
             while (ws.Instance4Net == null) {}
             while (ws.Instance4Net != null && ws.Instance4Net.State != WebSocketState.Closed)
             {
-                if (sw.Elapsed.TotalSeconds > 120)
+                if (sw.Elapsed.TotalSeconds > 20)
                     ws.Instance4Net.Close("Stop Test");
             }
             sw.Stop();
 
             // ASSERT
             Assert.NotNull(response.UserId);
+            Assert.Equal(userId, response.UserId);
             Assert.NotNull(response.Username);
         }
 
