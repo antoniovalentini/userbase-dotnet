@@ -40,22 +40,22 @@ namespace Userbase.Client.Crypto
         public static string ArrayBufferToString(byte[] buf)
         {
             throw new System.NotImplementedException("ArrayBufferToString not implemented");
-            var bufView = GetShortArray(buf);
-            var length = bufView.Length;
-            var result = "";
-            var chunkSize = TEN_KB; // using chunks prevents stack from blowing up
-
-            for (var i = 0; i < length; i += chunkSize) {
-                if (i + chunkSize > length)
-                {
-                    chunkSize = length - i;
-                }
-
-                var chunk = bufView.SubArray(i, chunkSize);
-                //result += String.fromCharCode.apply(null, chunk);
-            }
-
-            return result;
+            // var bufView = GetShortArray(buf);
+            // var length = bufView.Length;
+            // var result = "";
+            // var chunkSize = TEN_KB; // using chunks prevents stack from blowing up
+            //
+            // for (var i = 0; i < length; i += chunkSize) {
+            //     if (i + chunkSize > length)
+            //     {
+            //         chunkSize = length - i;
+            //     }
+            //
+            //     var chunk = bufView.SubArray(i, chunkSize);
+            //     //result += String.fromCharCode.apply(null, chunk);
+            // }
+            //
+            // return result;
         }
 
         private static short[] GetShortArray(byte[] pBaits)

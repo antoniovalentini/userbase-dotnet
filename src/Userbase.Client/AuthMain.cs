@@ -132,7 +132,7 @@ namespace Userbase.Client
                 DhKeySalt = Convert.ToBase64String(dhKeySalt),
                 HmacKeySalt = Convert.ToBase64String(hmacKeySalt),
             };
-            
+
             var request = new SignUpApiRequest
             {
                 Username = username,
@@ -215,8 +215,8 @@ namespace Userbase.Client
                     _localData.SaveSeedString(signInRequest.RememberMe, _config.AppId, lowerCaseUsername, seedStringFromBackup);
                 }
 
-                var seedString = !string.IsNullOrEmpty(savedSeedString) 
-                    ? savedSeedString 
+                var seedString = !string.IsNullOrEmpty(savedSeedString)
+                    ? savedSeedString
                     : seedStringFromBackup;
 
                 _localData.SignInSession(signInRequest.RememberMe, lowerCaseUsername, signInDto.Session.SessionId,
@@ -260,7 +260,7 @@ namespace Userbase.Client
                         throw new UnknownServiceUnavailable(ex);
                 }
             }
-            
+
         }
 
         private async Task ConnectWebSocket(SignInSession session, string seed, string rememberMe)
@@ -269,7 +269,7 @@ namespace Userbase.Client
             try
             {
                 response = await _ws.Connect(session, seed, rememberMe);
-            } 
+            }
             catch (Exception ex)
             {
                 if (ex.Message == "Web Socket already connected")
@@ -301,7 +301,7 @@ namespace Userbase.Client
                     if (one != null) throw one;
                     throw;
                 }
-                
+
             }
             catch (Exception ex)
             {
@@ -455,10 +455,10 @@ namespace Userbase.Client
             }
             catch (Exception ex)
             {
-                _logger.Log(ex.Message);
+                await _logger.Log(ex.Message);
                 return null;
             }
-            
+
             return null;
         }
     }

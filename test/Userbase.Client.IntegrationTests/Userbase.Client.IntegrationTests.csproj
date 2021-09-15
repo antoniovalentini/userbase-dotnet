@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Userbase.Client\Userbase.Client.csproj" />
+    <ProjectReference Include="..\..\src\Userbase.Client\Userbase.Client.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <UserSecretsId>Userbase-Client-IntegrationTests-bf4e2e40-30e1-42e6-87ca-9f88390a414c</UserSecretsId>

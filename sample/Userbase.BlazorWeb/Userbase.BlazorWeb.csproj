@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Userbase.Client\Userbase.Client.csproj" />
+    <ProjectReference Include="..\..\src\Userbase.Client\Userbase.Client.csproj" />
   </ItemGroup>
 
 </Project>

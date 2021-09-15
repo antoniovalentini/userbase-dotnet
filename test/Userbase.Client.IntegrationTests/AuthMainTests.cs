@@ -40,7 +40,7 @@ namespace Userbase.Client.IntegrationTests
         {
             _output = output;
 
-            // the type specified here is just so the secrets library can 
+            // the type specified here is just so the secrets library can
             // find the UserSecretId we added in the csproj file
             var builder = new ConfigurationBuilder()
                 .AddUserSecrets<AuthMainTests>();
@@ -111,7 +111,7 @@ namespace Userbase.Client.IntegrationTests
 
         [Fact]
         public async Task CompleteTest() {
-        
+
             // ARRANGE
             var username = Configuration["username"];
             var password = Configuration["password"];
@@ -136,13 +136,13 @@ namespace Userbase.Client.IntegrationTests
             var response = await auth.SignIn(signInRequest);
             var promise = new TaskCompletionSource<int>();
             #pragma warning disable 4014
-            Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(async () =>
             #pragma warning restore 4014
             {
                 var scopedWs = ws;
                 var scopedLogger = logger;
                 while (!scopedWs.Keys.Init) {}
-                scopedLogger.Log("KEYS INIT DONE");
+                await scopedLogger.Log("KEYS INIT DONE");
                 promise.SetResult(0);
             });
 

@@ -107,7 +107,7 @@ namespace Userbase.Client.Ws
         {
             if (Instance4Net != null)
                 Instance4Net.Close(code);
-            else 
+            else
                 Init();
         }
 
@@ -151,7 +151,7 @@ namespace Userbase.Client.Ws
         public async Task<HttpResponseMessage> Connect(SignInSession session, string seedString, string rememberMe, int reconnectDelay = 0)
         {
             if (_connected) throw new WebSocketError(WsAlreadyConnected, session.Username);
-            
+
             var timeout = false;
             var timeoutToOpenWebSocket = SetTimeout(
                 () =>
@@ -236,7 +236,7 @@ namespace Userbase.Client.Ws
                             throw new Exception("Missing database");
 
                         // queue guarantees transactions will be applied in the order they are received from the server
-                        if (database.ApplyTransactionsQueue.Count == 0) 
+                        if (database.ApplyTransactionsQueue.Count == 0)
                         {
                             // take a spot in the queue and proceed applying so the next caller knows queue is not empty
                             database.ApplyTransactionsQueue.Enqueue(null);
@@ -363,7 +363,7 @@ namespace Userbase.Client.Ws
 
         private async Task OnClosed(object sender, EventArgs args, SignInSession session, string seedString, string rememberMe, int reconnectDelay, bool timeout)
         {
-            _logger.Log("CLOSED");
+            await _logger.Log("CLOSED");
             if (timeout) return;
             if (args is ClosedEventArgs e)
             {
